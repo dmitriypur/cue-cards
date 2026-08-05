@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: API
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer:v2
+      - uses: ramsey/composer-install@v3
+        with:
+          working-directory: apps/api
+          composer-options: --prefer-dist --no-interaction
+      - name: Prepare application environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+      - name: Run API tests
+        run: php artisan test
+      - name: Check API formatting
+        run: ./vendor/bin/pint --test
+
+  mobile:
+    name: Mobile
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - run: npm ci
+      - run: npm run test:unit
+      - run: npm run typecheck
+      - run: npm run build

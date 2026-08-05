@@ -33,7 +33,7 @@ Package metadata was checked on 2026-08-05. Lock files created during Task 1 are
 | `laravel/ai` | 0.10.2 |
 | `vue` | 3.5.41 |
 | `vite` | 8.2.0 |
-| `typescript` | 7.0.2 |
+| `typescript` | 5.9.3 |
 | `pinia` | 4.0.2 |
 | `vue-router` | 5.2.0 |
 | `tailwindcss` | 4.3.3 |
@@ -57,6 +57,8 @@ Package metadata was checked on 2026-08-05. Lock files created during Task 1 are
 | `@vue/test-utils` | 2.4.11 |
 | `happy-dom` | 20.11.1 |
 | `@playwright/test` | 1.62.1 |
+
+TypeScript was corrected to 5.9.3 during Task 1 verification: TypeScript 7.0.2 uses the native compiler layout and is not compatible with `vue-tsc` 3.3.9 or the `typescript ^5.x` peer range required by `openapi-typescript` 7.13.0.
 
 ## Target File Map
 
@@ -141,16 +143,16 @@ Package metadata was checked on 2026-08-05. Lock files created during Task 1 are
 - Produces `GET /up -> 200` from Laravel's health route.
 - Consumes no product interfaces; this task establishes the build boundary used by all later tasks.
 
-- [ ] Scaffold Laravel without nesting another Git repository: `composer create-project laravel/laravel apps/api "^13.0" --prefer-dist` and remove only `apps/api/.git` if the skeleton created it.
-- [ ] In `apps/api`, require `laravel/sanctum:^4.3` and `laravel/ai:0.10.2`, run `php artisan install:api`, publish the AI configuration, and commit the resulting lock file and migrations.
-- [ ] Configure `apps/api/phpunit.xml` with `DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:`, `QUEUE_CONNECTION=sync`, `CACHE_STORE=array`, and `MAIL_MAILER=array`.
-- [ ] Add `apps/api/tests/Feature/HealthTest.php` asserting `get('/up')->assertOk()` and run `cd apps/api && php artisan test --filter=HealthTest`; expected result is one passing test.
-- [ ] Scaffold Vue with `npm create vite@9.1.2 apps/mobile -- --template vue-ts`, then install the exact JavaScript packages from the dependency table.
-- [ ] Initialize Capacitor with app id `app.cuecards.mobile`, app name `Cue Cards`, web directory `dist`, add Android, and run `npx cap sync android`.
-- [ ] Configure Tailwind's Vite plugin, initialize shadcn-vue source components, and define paired light/dark semantic tokens in `src/styles/index.css` before creating application cards.
-- [ ] Add package scripts `typecheck`, `test:unit`, `test:unit:watch`, `test:e2e`, `build`, `cap:sync`, `android:debug`, and `contract:generate` using direct tool commands rather than shell-specific scripts.
-- [ ] Set `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, and `useUnknownInCatchVariables` to `true` in `apps/mobile/tsconfig.app.json`.
-- [ ] Write the failing `AppShell` component test before replacing the Vite starter. It must assert the visible app name and a `<main>` landmark:
+- [x] Scaffold Laravel without nesting another Git repository: `composer create-project laravel/laravel apps/api "^13.0" --prefer-dist` and remove only `apps/api/.git` if the skeleton created it.
+- [x] In `apps/api`, require `laravel/sanctum:^4.3` and `laravel/ai:0.10.2`, run `php artisan install:api`, publish the AI configuration, and commit the resulting lock file and migrations.
+- [x] Configure `apps/api/phpunit.xml` with `DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:`, `QUEUE_CONNECTION=sync`, `CACHE_STORE=array`, and `MAIL_MAILER=array`.
+- [x] Add `apps/api/tests/Feature/HealthTest.php` asserting `get('/up')->assertOk()` and run `cd apps/api && php artisan test --filter=HealthTest`; expected result is one passing test.
+- [x] Scaffold Vue with `npm create vite@9.1.2 apps/mobile -- --template vue-ts`, then install the exact JavaScript packages from the dependency table.
+- [x] Initialize Capacitor with app id `app.cuecards.mobile`, app name `Cue Cards`, web directory `dist`, add Android, and run `npx cap sync android`.
+- [x] Configure Tailwind's Vite plugin, initialize shadcn-vue source components, and define paired light/dark semantic tokens in `src/styles/index.css` before creating application cards.
+- [x] Add package scripts `typecheck`, `test:unit`, `test:unit:watch`, `test:e2e`, `build`, `cap:sync`, `android:debug`, and `contract:generate` using direct tool commands rather than shell-specific scripts.
+- [x] Set `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, and `useUnknownInCatchVariables` to `true` in `apps/mobile/tsconfig.app.json`.
+- [x] Write the failing `AppShell` component test before replacing the Vite starter. It must assert the visible app name and a `<main>` landmark:
 
 ```ts
 it('renders the application landmark', () => {
@@ -160,12 +162,12 @@ it('renders the application landmark', () => {
 })
 ```
 
-- [ ] Run `cd apps/mobile && npm run test:unit -- AppShell`; expected failure: `AppShell.vue` cannot be resolved.
-- [ ] Implement `AppShell.vue`, the router, Pinia registration, and `bootstrapApp()`; remove all Vite demo assets and render a neutral empty-library route.
-- [ ] Run `npm run test:unit -- AppShell`, `npm run typecheck`, and `npm run build`; all must pass without warnings caused by application code.
-- [ ] Add `.github/workflows/ci.yml` with independent `api` and `mobile` jobs using PHP 8.3, Node 24, Composer/npm caches, `php artisan test`, Pint check, unit tests, typecheck, and production build.
-- [ ] Expand `.gitignore` for `.env`, local SQLite files, `node_modules`, `vendor`, `dist`, Android build directories, `key.properties`, `*.jks`, `*.keystore`, and `.idea` while retaining both lock files.
-- [ ] Document install and verification commands in `README.md`, run the full Task 1 verification, update the development log and current-task status, then commit: `chore: bootstrap Laravel and Capacitor monorepo`.
+- [x] Run `cd apps/mobile && npm run test:unit -- AppShell`; expected failure: `AppShell.vue` cannot be resolved.
+- [x] Implement `AppShell.vue`, the router, Pinia registration, and `bootstrapApp()`; remove all Vite demo assets and render a neutral empty-library route.
+- [x] Run `npm run test:unit -- AppShell`, `npm run typecheck`, and `npm run build`; all must pass without warnings caused by application code.
+- [x] Add `.github/workflows/ci.yml` with independent `api` and `mobile` jobs using PHP 8.3, Node 24, Composer/npm caches, `php artisan test`, Pint check, unit tests, typecheck, and production build.
+- [x] Expand `.gitignore` for `.env`, local SQLite files, `node_modules`, `vendor`, `dist`, Android build directories, `key.properties`, `*.jks`, `*.keystore`, and `.idea` while retaining both lock files.
+- [x] Document install and verification commands in `README.md`, run the full Task 1 verification, update the development log and current-task status, then commit: `chore: bootstrap Laravel and Capacitor monorepo`.
 
 ## Task 2: Define the mobile domain and transactional local storage
 

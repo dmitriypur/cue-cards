@@ -24,3 +24,29 @@
 - Code review found the generated instrumentation test still expected Capacitor's placeholder package. Both Android sample tests now use `app.cuecards.mobile`; `./gradlew compileDebugAndroidTestJavaWithJavac testDebugUnitTest assembleDebug` passed with 388 actionable tasks (93 executed, 295 up-to-date).
 - Confirmed `.env`, local SQLite, dependency trees, web/Android builds, signing material, and generated Capacitor web assets remain ignored.
 - Task 001 is complete. Task 002 was not started.
+
+## 2026-08-06 — Task 002: mobile domain and transactional local storage
+
+- Added strict script/card/cue domain types, Web Crypto SHA-256 hashing, and pure cue reconciliation that retains cue strings and marks hash-mismatched sets `stale`, including manually edited cues.
+- Observed the domain RED: `npm run test:unit -- cueState` failed because `@/domain/scripts/cueState` did not exist. The focused GREEN passed with 4 tests, including a hand-derived SHA-256 digest for Cyrillic UTF-8 text.
+- Added application repository ports, a framework-neutral SQL driver/transaction boundary, local unit of work, normalized SQLite schema v1, and repositories for scripts, outbox commands, and recording sessions.
+- Observed the storage RED: `npm run test:unit -- SaveScriptAggregate` failed because the unit of work and SQLite implementation were absent. The finished integration suite passes 5 tests on Node 24's real in-memory SQLite.
+- `SaveScriptAggregate` now writes a complete aggregate and one `script.replace` snapshot in the same transaction. The suite proves an injected outbox failure leaves scripts, cards, and cue sets empty.
+- Pending outbox snapshots coalesce while preserving operation ID and base version. An in-flight command remains immutable and receives exactly one new pending successor.
+- Review exposed that delete/reinsert snapshot persistence cascaded into `recording_sessions`. A new regression test first failed with a missing recording cursor; card/cue UPSERTs now preserve the cursor while deleting only cards absent from the snapshot.
+- `CapacitorSqlDriver` is the only application module importing `@capacitor-community/sqlite`; native bootstrap applies migrations before router initialization. Foreign keys, schema tracking, all required local tables, and the card/outbox indexes are present.
+- Final mobile verification: `npm run test:unit` passed 10 tests in 3 files; `npm run typecheck`, `npm run build`, and `npm run cap:sync` exited successfully. Vitest prints Node's upstream experimental warning for the built-in `node:sqlite` test adapter.
+- Final native verification: `./gradlew testDebugUnitTest assembleDebug` completed successfully with 297 actionable tasks (26 executed, 271 up-to-date). The two existing Capacitor `flatDir` warnings remain unchanged.
+- Task 002 is complete. Task 003 was not started.
+
+## 2026-08-06 — Task 003: Markdown/TXT import and correctable preview
+
+- Added synthetic Cyrillic Markdown/TXT fixtures. Markdown parsing uses `#` for the title, `##` for cards, preserves `###` in full text, normalizes line endings, and reports empty blocks. TXT parsing follows the documented 1–80 character punctuation-free isolated-line heuristic and reports ambiguous structure without AI.
+- Observed focused RED failures for the missing Markdown parser, TXT parser, source validation, draft editor, Capacitor picker, import workflow, aggregate builder, source view, and preview components; each focused suite passed after its minimal implementation.
+- Source validation accepts only `.md`/`.txt`, rejects empty or over-1-MiB UTF-8 content using both metadata and actual byte length, and records a SHA-256 import hash. The Capacitor adapter decodes selected bytes with fatal UTF-8 validation.
+- Preview changes remain in Pinia memory until Save. Split, merge, reorder, rename, empty-block removal, semantic warning/error surfaces, and Save blocking are covered. Cancel clears only the draft.
+- `SaveImportDraft` creates client identifiers, content hashes, missing cue sets, and a pending aggregate, then delegates persistence to Task 002's transactional `SaveScriptAggregate`; no network request participates in the local save.
+- Final API verification: `php artisan test` passed 3 tests/3 assertions; `./vendor/bin/pint --test` passed.
+- Final mobile verification: `npm run test:unit` passed 45 tests in 12 files; `npm run typecheck`, `npm run build`, and `npm run cap:sync` exited successfully.
+- Final native verification: `./gradlew testDebugUnitTest assembleDebug` completed successfully with 297 actionable tasks (29 executed, 268 up-to-date). The two existing Capacitor `flatDir` warnings remain unchanged.
+- Task 003 is complete. Task 004 was not started.

@@ -199,16 +199,16 @@ it('renders the application landmark', () => {
 - Produces `SaveScriptAggregate.execute(input: SaveScriptInput): Promise<ScriptAggregate>`.
 - Consumes `SqlDriver.transaction<T>(work: (tx: SqlTransaction) => Promise<T>): Promise<T>`.
 
-- [ ] Define strict domain types with UUID strings, ISO timestamps, integer versions, ordered cards, cues as `readonly string[]`, and explicit `missing | pending | generating | ready | stale | failed` status.
-- [ ] Write `cueState.test.ts` first: unchanged text keeps a ready cue set, changed text keeps its cues but marks it stale, and manually edited cues are never cleared.
-- [ ] Run `npm run test:unit -- cueState`; expected failure: `reconcileCueState` is missing.
-- [ ] Implement `sha256(text): Promise<string>` with Web Crypto and `reconcileCueState(cueSet, nextHash)` as a pure function; rerun the focused test to green.
-- [ ] Define the SQL driver and transaction interfaces without importing Capacitor types into application or domain folders.
-- [ ] Add migration `001_initial.ts` creating `scripts`, `cards`, `cue_sets`, `outbox_commands`, `sync_state`, `recording_sessions`, `settings`, and `schema_migrations`; give outbox rows `pending | in_flight` state, attempts, and next-attempt time, enable foreign keys, and index `cards(script_id, position)` plus `outbox_commands(state, created_at)`.
-- [ ] Write `SaveScriptAggregate.test.ts` first. Save a two-card aggregate and assert script, cards, cue sets, and one `script.replace` outbox command are persisted atomically.
-- [ ] Add a rollback assertion by making the fake driver fail on the outbox insert and verifying that no script rows remain.
-- [ ] Run `npm run test:unit -- SaveScriptAggregate`; expected failure: the use case and SQLite repositories do not exist.
-- [ ] Implement `LocalUnitOfWork` and repositories, then implement `SaveScriptAggregate` so entity writes and outbox enqueue share one SQL transaction:
+- [x] Define strict domain types with UUID strings, ISO timestamps, integer versions, ordered cards, cues as `readonly string[]`, and explicit `missing | pending | generating | ready | stale | failed` status.
+- [x] Write `cueState.test.ts` first: unchanged text keeps a ready cue set, changed text keeps its cues but marks it stale, and manually edited cues are never cleared.
+- [x] Run `npm run test:unit -- cueState`; expected failure: `reconcileCueState` is missing.
+- [x] Implement `sha256(text): Promise<string>` with Web Crypto and `reconcileCueState(cueSet, nextHash)` as a pure function; rerun the focused test to green.
+- [x] Define the SQL driver and transaction interfaces without importing Capacitor types into application or domain folders.
+- [x] Add migration `001_initial.ts` creating `scripts`, `cards`, `cue_sets`, `outbox_commands`, `sync_state`, `recording_sessions`, `settings`, and `schema_migrations`; give outbox rows `pending | in_flight` state, attempts, and next-attempt time, enable foreign keys, and index `cards(script_id, position)` plus `outbox_commands(state, created_at)`.
+- [x] Write `SaveScriptAggregate.test.ts` first. Save a two-card aggregate and assert script, cards, cue sets, and one `script.replace` outbox command are persisted atomically.
+- [x] Add a rollback assertion by making the fake driver fail on the outbox insert and verifying that no script rows remain.
+- [x] Run `npm run test:unit -- SaveScriptAggregate`; expected failure: the use case and SQLite repositories do not exist.
+- [x] Implement `LocalUnitOfWork` and repositories, then implement `SaveScriptAggregate` so entity writes and outbox enqueue share one SQL transaction:
 
 ```ts
 return this.unitOfWork.run(async (tx) => {
@@ -225,10 +225,10 @@ return this.unitOfWork.run(async (tx) => {
 })
 ```
 
-- [ ] Implement `CapacitorSqlDriver` as the only module importing `@capacitor-community/sqlite`; initialize migrations before the router mounts.
-- [ ] Make `upsertLatestSnapshot` replace the payload of an unsent `pending` command for the same aggregate while preserving its operation ID/base version; if the prior command is `in_flight`, insert one new pending command instead.
-- [ ] Rerun both focused tests, then `npm run test:unit`, `npm run typecheck`, and an Android debug build.
-- [ ] Update the development log and commit: `feat(mobile): add offline script storage and outbox`.
+- [x] Implement `CapacitorSqlDriver` as the only module importing `@capacitor-community/sqlite`; initialize migrations before the router mounts.
+- [x] Make `upsertLatestSnapshot` replace the payload of an unsent `pending` command for the same aggregate while preserving its operation ID/base version; if the prior command is `in_flight`, insert one new pending command instead.
+- [x] Rerun both focused tests, then `npm run test:unit`, `npm run typecheck`, and an Android debug build.
+- [x] Update the development log and commit: `feat(mobile): add offline script storage and outbox`.
 
 ## Task 3: Parse Markdown/TXT and provide a correctable import draft
 
@@ -258,21 +258,21 @@ return this.unitOfWork.run(async (tx) => {
 - Produces draft operations `rename`, `moveBlock`, `splitBlock`, `mergeWithNext`, and `removeEmptyBlock` without writing SQLite.
 - Consumes `SaveScriptAggregate` only after preview validation succeeds.
 
-- [ ] Add synthetic fixtures with a Cyrillic `#` title, at least three `##` blocks, an internal `###` heading, and a TXT file with both clear and ambiguous heading candidates.
-- [ ] Write Markdown parser tests asserting `#` becomes the script title, every `##` starts a card, `###` remains in full text, filename is the fallback title, and empty cards produce validation issues.
-- [ ] Run `npm run test:unit -- MarkdownScriptParser`; expected failure: parser module not found.
-- [ ] Implement a line-oriented Markdown parser that preserves original block text and line endings normalized to `\n`; rerun the focused tests.
-- [ ] Write TXT parser tests for the exact heuristic: a candidate heading is a trimmed line of 1–80 characters, surrounded by blank lines or file boundaries, and not ending in `.`, `!`, `?`, `,`, `:`, or `;`.
-- [ ] Run `npm run test:unit -- TextScriptParser`; expected failure: parser module not found.
-- [ ] Implement the deterministic TXT parser and return warnings for ambiguous structure; never call AI from either parser.
-- [ ] Implement `ParseSourceDocument` validation for `.md`/`.txt`, UTF-8 decoding, a 1 MiB technical limit, empty files, and SHA-256 import hash.
-- [ ] Implement `CapacitorSourceFilePicker` with `FilePicker.pickFiles({ limit: 1, readData: true, types: ['text/plain', 'text/markdown'] })`; keep plugin data conversion inside the adapter.
-- [ ] Write the preview component test first: warnings and empty-block errors render with readable dark text on a light surface, Save is disabled for errors, and split/merge/reorder actions emit draft changes.
-- [ ] Run the focused component test; expected failure: preview components are absent.
-- [ ] Build `ImportSourceView`, `ImportPreviewView`, `ImportBlockCard`, and the import store using semantic tokens `--surface`, `--surface-foreground`, `--muted`, and `--muted-foreground`; do not use literal white text on light cards.
-- [ ] Add routes `/import` and `/import/preview`; Save constructs client UUIDv7 identifiers and calls `SaveScriptAggregate`, while Cancel discards only the in-memory draft.
-- [ ] Run parser and component suites, strict typecheck, production build, and Android debug build.
-- [ ] Update the development log and commit: `feat(mobile): import markdown and text scripts`.
+- [x] Add synthetic fixtures with a Cyrillic `#` title, at least three `##` blocks, an internal `###` heading, and a TXT file with both clear and ambiguous heading candidates.
+- [x] Write Markdown parser tests asserting `#` becomes the script title, every `##` starts a card, `###` remains in full text, filename is the fallback title, and empty cards produce validation issues.
+- [x] Run `npm run test:unit -- MarkdownScriptParser`; expected failure: parser module not found.
+- [x] Implement a line-oriented Markdown parser that preserves original block text and line endings normalized to `\n`; rerun the focused tests.
+- [x] Write TXT parser tests for the exact heuristic: a candidate heading is a trimmed line of 1–80 characters, surrounded by blank lines or file boundaries, and not ending in `.`, `!`, `?`, `,`, `:`, or `;`.
+- [x] Run `npm run test:unit -- TextScriptParser`; expected failure: parser module not found.
+- [x] Implement the deterministic TXT parser and return warnings for ambiguous structure; never call AI from either parser.
+- [x] Implement `ParseSourceDocument` validation for `.md`/`.txt`, UTF-8 decoding, a 1 MiB technical limit, empty files, and SHA-256 import hash.
+- [x] Implement `CapacitorSourceFilePicker` with `FilePicker.pickFiles({ limit: 1, readData: true, types: ['text/plain', 'text/markdown'] })`; keep plugin data conversion inside the adapter.
+- [x] Write the preview component test first: warnings and empty-block errors render with readable dark text on a light surface, Save is disabled for errors, and split/merge/reorder actions emit draft changes.
+- [x] Run the focused component test; expected failure: preview components are absent.
+- [x] Build `ImportSourceView`, `ImportPreviewView`, `ImportBlockCard`, and the import store using semantic tokens `--surface`, `--surface-foreground`, `--muted`, and `--muted-foreground`; do not use literal white text on light cards.
+- [x] Add routes `/import` and `/import/preview`; Save constructs client UUIDv7 identifiers and calls `SaveScriptAggregate`, while Cancel discards only the in-memory draft.
+- [x] Run parser and component suites, strict typecheck, production build, and Android debug build.
+- [x] Update the development log and commit: `feat(mobile): import markdown and text scripts`.
 
 ## Task 4: Build the offline library and local script lifecycle
 

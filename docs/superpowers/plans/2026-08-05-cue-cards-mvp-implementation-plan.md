@@ -369,18 +369,18 @@ return this.unitOfWork.run(async (tx) => {
 - Produces `FinishRecording.execute(sessionId): Promise<void>` and always releases the wake lock.
 - Consumes local `ScriptRepository` and `RecordingSessionRepository`; it consumes no API or connectivity interface.
 
-- [ ] Write session tests first for starting at any card, clamped previous/next navigation, global `cues | full` mode, font scale, and recovery after constructing a new store instance.
-- [ ] Add a test that wake lock release runs on normal finish and after a rendering/navigation error.
-- [ ] Run `npm run test:unit -- RecordingSession`; expected failure: recording actions and ports are absent.
-- [ ] Implement actions and persist the session after every navigation or mode change; use `try/finally` around finish and route cleanup.
-- [ ] Implement `CapacitorWakeLock` with `KeepAwake.keepAwake()` and `KeepAwake.allowSleep()`; a failed or unsupported plugin reports a non-blocking warning and does not break recording.
-- [ ] Write the component test first for progress, title, segmented cue/full switch, scrollable full text, 48 px buttons, disabled boundary actions, and swipe parity.
-- [ ] Run `npm run test:unit -- RecordingView`; expected failure: focus components are absent.
-- [ ] Implement setup and focus views. Ignore swipes starting in vertically scrollable text unless horizontal displacement exceeds 60 px and is at least 1.5 times vertical displacement.
-- [ ] Save the selected mode across cards, preserve independent scroll position per card in memory, and restore the saved session after force-closing the web view.
-- [ ] Add a router leave guard and Capacitor app-state listener that release wake lock when the recording route is no longer active.
-- [ ] Run recording tests, all mobile tests, typecheck, build, Android unit tests, and debug APK assembly.
-- [ ] Update the development log and commit: `feat(mobile): add offline recording mode`.
+- [x] Write session tests first for starting at any card, clamped previous/next navigation, global `cues | full` mode, font scale, and recovery after constructing a new store instance.
+- [x] Add a test that wake lock release runs on normal finish and after a rendering/navigation error.
+- [x] Run `npm run test:unit -- RecordingSession`; expected failure: recording actions and ports are absent.
+- [x] Implement actions and persist the session after every navigation or mode change; use `try/finally` around finish and route cleanup.
+- [x] Implement `CapacitorWakeLock` with `KeepAwake.keepAwake()` and `KeepAwake.allowSleep()`; a failed or unsupported plugin reports a non-blocking warning and does not break recording.
+- [x] Write the component test first for progress, title, segmented cue/full switch, scrollable full text, 48 px buttons, disabled boundary actions, and swipe parity.
+- [x] Run `npm run test:unit -- RecordingView`; expected failure: focus components are absent.
+- [x] Implement setup and focus views. Ignore swipes starting in vertically scrollable text unless horizontal displacement exceeds 60 px and is at least 1.5 times vertical displacement.
+- [x] Save the selected mode across cards, preserve independent scroll position per card in memory, and restore the saved session after force-closing the web view.
+- [x] Add a router leave guard and Capacitor app-state listener that release wake lock when the recording route is no longer active.
+- [x] Run recording tests, all mobile tests, typecheck, build, Android unit tests, and debug APK assembly.
+- [x] Update the development log and commit: `feat(mobile): add offline recording mode`.
 
 ## Task 7: Build Laravel identity, scripts, and superadmin access
 
@@ -421,20 +421,20 @@ return this.unitOfWork.run(async (tx) => {
 - Produces `GET /api/v1/me` and ownership-protected `GET /api/v1/scripts/{script}`.
 - Consumes Sanctum token issuance and Laravel Policies; no mobile transport code is imported.
 
-- [ ] Write `EntitlementServiceTest` first: `superadmin` is allowed every enum case, a normal user receives only explicitly granted free features, and technical safeguards are not represented as commercial entitlements.
-- [ ] Run `php artisan test --filter=EntitlementServiceTest`; expected failure: identity enums and service are missing.
-- [ ] Implement backed `Role` and `Feature` enums plus `EntitlementService`; make superadmin the first branch so future features are automatically included.
-- [ ] Add portable UUID-keyed script/card/cue-set migrations with integer optimistic `version`, JSON cues, soft deletes, ownership foreign keys, unique `(script_id, position)`, and relevant indexes.
-- [ ] Write API auth tests first: valid seeded login returns a bearer token and full entitlement list, invalid login returns `AUTH_INVALID_CREDENTIALS`, `/me` requires Sanctum, and logout revokes only the current token.
-- [ ] Run `php artisan test --filter=AuthTest`; expected failure: API routes and actions are absent.
-- [ ] Implement form requests, auth actions, controllers, and resources under `/api/v1`; return errors as `{ "error": { "code", "message", "correlation_id" } }`.
-- [ ] Implement `SuperadminSeeder` reading `SUPERADMIN_NAME`, `SUPERADMIN_EMAIL`, and `SUPERADMIN_PASSWORD` from environment; fail loudly when production values are absent and never place a real password in the repository.
-- [ ] Write ownership tests first: owner can read, another user receives 404, soft-deleted scripts are hidden, and nested cards/cues never leak across users.
-- [ ] Run the focused read tests; expected failure: script action/policy/resource is missing.
-- [ ] Implement models as persistence maps, `ScriptPolicy`, `GetScript`, eager-loading with deterministic card order, and API resources.
-- [ ] Add a PostgreSQL 16 CI service and a migration/test job using the same test suite; no database-specific migration branches are allowed.
-- [ ] Run `php artisan test`, `./vendor/bin/pint --test`, `php artisan migrate:fresh --seed` on a disposable SQLite database, and the PostgreSQL CI job.
-- [ ] Update the development log and commit: `feat(api): add superadmin auth and script read model`.
+- [x] Write `EntitlementServiceTest` first: `superadmin` is allowed every enum case, a normal user receives only explicitly granted free features, and technical safeguards are not represented as commercial entitlements.
+- [x] Run `php artisan test --filter=EntitlementServiceTest`; expected failure: identity enums and service are missing.
+- [x] Implement backed `Role` and `Feature` enums plus `EntitlementService`; make superadmin the first branch so future features are automatically included.
+- [x] Add portable UUID-keyed script/card/cue-set migrations with integer optimistic `version`, JSON cues, soft deletes, ownership foreign keys, unique `(script_id, position)`, and relevant indexes.
+- [x] Write API auth tests first: valid seeded login returns a bearer token and full entitlement list, invalid login returns `AUTH_INVALID_CREDENTIALS`, `/me` requires Sanctum, and logout revokes only the current token.
+- [x] Run `php artisan test --filter=AuthTest`; expected failure: API routes and actions are absent.
+- [x] Implement form requests, auth actions, controllers, and resources under `/api/v1`; return errors as `{ "error": { "code", "message", "correlation_id" } }`.
+- [x] Implement `SuperadminSeeder` reading `SUPERADMIN_NAME`, `SUPERADMIN_EMAIL`, and `SUPERADMIN_PASSWORD` from environment; fail loudly when production values are absent and never place a real password in the repository.
+- [x] Write ownership tests first: owner can read, another user receives 404, soft-deleted scripts are hidden, and nested cards/cues never leak across users.
+- [x] Run the focused read tests; expected failure: script action/policy/resource is missing.
+- [x] Implement models as persistence maps, `ScriptPolicy`, `GetScript`, eager-loading with deterministic card order, and API resources.
+- [x] Add a PostgreSQL 16 CI service and a migration/test job using the same test suite; no database-specific migration branches are allowed.
+- [x] Run `php artisan test`, `./vendor/bin/pint --test`, and `php artisan migrate:fresh --seed` on a disposable SQLite database; configure the PostgreSQL CI job as the environment-specific parity gate.
+- [x] Update the development log and commit: `feat(api): add superadmin auth and script read model`.
 
 ## Task 8: Define OpenAPI and add secure mobile authentication
 

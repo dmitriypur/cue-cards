@@ -34,6 +34,52 @@ jobs:
       - name: Check API formatting
         run: ./vendor/bin/pint --test
 
+  api-postgres:
+    name: API (PostgreSQL 16)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: cue_cards_test
+          POSTGRES_USER: cue_cards
+          POSTGRES_PASSWORD: cue_cards_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cue_cards -d cue_cards_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          extensions: pdo_pgsql
+          tools: composer:v2
+      - uses: ramsey/composer-install@v3
+        with:
+          working-directory: apps/api
+          composer-options: --prefer-dist --no-interaction
+      - name: Prepare application environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+      - name: Run API tests on PostgreSQL
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: cue_cards_test
+          DB_USERNAME: cue_cards
+          DB_PASSWORD: cue_cards_test
+        run: php artisan test
+
   mobile:
     name: Mobile
     runs-on: ubuntu-latest

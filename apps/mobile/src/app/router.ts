@@ -1,24 +1,17 @@
 import { defineComponent, h } from 'vue'
-import { createRouter, createWebHistory, RouterLink, type Router } from 'vue-router'
+import { createRouter, createWebHistory, type Router } from 'vue-router'
 
 import ImportPreviewView from '@/features/import/ImportPreviewView.vue'
 import ImportSourceView from '@/features/import/ImportSourceView.vue'
+import LibraryView from '@/features/library/LibraryView.vue'
 
-const EmptyLibraryView = defineComponent({
-  name: 'EmptyLibraryView',
+const PlannedFeatureView = defineComponent({
+  name: 'PlannedFeatureView',
   setup() {
     return () =>
-      h('section', { 'aria-labelledby': 'library-heading' }, [
-        h('h1', { id: 'library-heading', class: 'text-2xl font-semibold' }, 'Библиотека'),
-        h('p', { class: 'mt-2 text-muted-foreground' }, 'Импортируйте сценарий, чтобы создать первую карточку.'),
-        h(
-          RouterLink,
-          {
-            to: '/import',
-            class: 'mt-5 inline-flex rounded-md bg-primary px-4 py-3 text-primary-foreground',
-          },
-          { default: () => 'Импортировать сценарий' },
-        ),
+      h('section', { class: 'rounded-xl border bg-surface p-6 text-surface-foreground' }, [
+        h('h1', { class: 'text-2xl font-semibold' }, 'Раздел готовится'),
+        h('p', { class: 'mt-2 text-muted-foreground' }, 'Данные сценария уже сохранены локально.'),
       ])
   },
 })
@@ -28,9 +21,11 @@ export function createAppRouter(): Router {
     history: createWebHistory(),
     routes: [
       { path: '/', redirect: '/library' },
-      { path: '/library', name: 'library', component: EmptyLibraryView },
+      { path: '/library', name: 'library', component: LibraryView },
       { path: '/import', name: 'import-source', component: ImportSourceView },
       { path: '/import/preview', name: 'import-preview', component: ImportPreviewView },
+      { path: '/scripts/:id/edit', name: 'script-edit', component: PlannedFeatureView },
+      { path: '/scripts/:id/record', name: 'script-record', component: PlannedFeatureView },
     ],
   })
 }

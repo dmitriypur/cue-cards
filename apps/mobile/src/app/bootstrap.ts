@@ -8,11 +8,19 @@ import { createAppRouter } from '@/app/router'
 import { ImportWorkflow } from '@/application/import/ImportWorkflow'
 import { ParseSourceDocument } from '@/application/import/ParseSourceDocument'
 import { SaveImportDraft } from '@/application/import/SaveImportDraft'
+import { DeleteScript } from '@/application/scripts/DeleteScript'
+import { GetScript } from '@/application/scripts/GetScript'
+import { ListScripts } from '@/application/scripts/ListScripts'
 import { SaveScriptAggregate } from '@/application/scripts/SaveScriptAggregate'
 import {
   importNavigationKey,
   importWorkflowKey,
 } from '@/features/import/import.dependencies'
+import {
+  libraryDependenciesKey,
+  libraryNavigationKey,
+  type LibraryDependencies,
+} from '@/features/library/library.dependencies'
 import { CapacitorSourceFilePicker } from '@/infrastructure/capacitor/CapacitorSourceFilePicker'
 import { CapacitorSqlDriver } from '@/infrastructure/sqlite/CapacitorSqlDriver'
 import { LocalUnitOfWork } from '@/infrastructure/sqlite/LocalUnitOfWork'
@@ -22,6 +30,7 @@ import { SqliteScriptRepository } from '@/infrastructure/sqlite/SqliteScriptRepo
 export async function bootstrapApp(): Promise<void> {
   const appRouter = createAppRouter()
   let importWorkflow: ImportWorkflow | null = null
+  let libraryDependencies: LibraryDependencies | null = null
 
   if (Capacitor.isNativePlatform()) {
     const database = new CapacitorSqlDriver()
@@ -43,6 +52,12 @@ export async function bootstrapApp(): Promise<void> {
       new ParseSourceDocument(),
       saveDraft,
     )
+    libraryDependencies = {
+      listScripts: new ListScripts(scripts),
+      getScript: new GetScript(scripts, saveAggregate),
+      deleteScript: new DeleteScript(scripts, saveAggregate),
+      isOnline: () => navigator.onLine,
+    }
   }
 
   const app = createApp(App)
@@ -50,11 +65,19 @@ export async function bootstrapApp(): Promise<void> {
   app.use(createPinia())
   app.use(appRouter)
   if (importWorkflow !== null) app.provide(importWorkflowKey, importWorkflow)
+  if (libraryDependencies !== null) {
+    app.provide(libraryDependenciesKey, libraryDependencies)
+  }
   app.provide(importNavigationKey, {
     openPreview: async () => { await appRouter.push('/import/preview') },
     openLibrary: async (scriptId?: string) => {
       await appRouter.push(scriptId === undefined ? '/library' : `/library?created=${scriptId}`)
     },
+  })
+  app.provide(libraryNavigationKey, {
+    openImport: async () => { await appRouter.push('/import') },
+    openEditor: async (scriptId: string) => { await appRouter.push(`/scripts/${scriptId}/edit`) },
+    openRecording: async (scriptId: string) => { await appRouter.push(`/scripts/${scriptId}/record`) },
   })
 
   await appRouter.isReady()

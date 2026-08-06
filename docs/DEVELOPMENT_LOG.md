@@ -50,3 +50,15 @@
 - Final mobile verification: `npm run test:unit` passed 45 tests in 12 files; `npm run typecheck`, `npm run build`, and `npm run cap:sync` exited successfully.
 - Final native verification: `./gradlew testDebugUnitTest assembleDebug` completed successfully with 297 actionable tasks (29 executed, 268 up-to-date). The two existing Capacitor `flatDir` warnings remain unchanged.
 - Task 003 is complete. Task 004 was not started.
+
+## 2026-08-06 — Task 004: offline library and local script lifecycle
+
+- Added application actions for deterministically sorted local summaries and opening scripts. Record/Edit navigation updates `lastOpenedAt`, `updatedAt`, and `syncStatus` through `SaveScriptAggregate` before changing routes, so the edit remains SQLite-first and shares the transactional outbox path.
+- Observed the library RED: `npm run test:unit -- LibraryView` failed because the view did not exist. The completed component/store suite covers empty and populated libraries, cue/sync badges, offline transitions, semantic tile foregrounds, Import/Record/Edit actions, safe action errors, deletion confirmation/cancellation, snackbar Undo, and refreshed ordering after restore.
+- Observed the application RED: `npm run test:unit -- LibraryActions` failed because `ListScripts` and `GetScript` did not exist. The focused suite verifies last-opened/update ordering, touch-before-return persistence, and rejection of missing/deleted scripts.
+- Observed the delete RED: `npm run test:unit -- DeleteScript` failed because the action did not exist. Real in-memory SQLite tests prove soft-delete plus outbox coalescing, pending Undo replacement, one successor after an in-flight deletion, and preservation of independent card tombstones even when their timestamp equals the script deletion timestamp.
+- Review identified and tests reproduced five correctness gaps: child tombstone resurrection, action errors hiding the list, stale Undo summaries, non-reactive connectivity, and a missing destructive foreground token. Each was corrected; the final independent re-review reported no remaining Critical or Important findings.
+- Final API verification: `php artisan test` passed 3 tests/3 assertions; `./vendor/bin/pint --test` passed.
+- Final mobile verification: `npm run test:unit` passed 59 tests in 17 files; `npm run typecheck`, `npm run build`, and `npm run cap:sync` exited successfully. Vitest retains Node's upstream experimental warning for the built-in `node:sqlite` adapter.
+- Final native verification: `./gradlew testDebugUnitTest assembleDebug` completed successfully with 297 actionable tasks (29 executed, 268 up-to-date). The two existing Capacitor `flatDir` warnings remain unchanged.
+- Task 004 is complete. Task 005 was not started.

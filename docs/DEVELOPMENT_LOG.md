@@ -24,3 +24,17 @@
 - Code review found the generated instrumentation test still expected Capacitor's placeholder package. Both Android sample tests now use `app.cuecards.mobile`; `./gradlew compileDebugAndroidTestJavaWithJavac testDebugUnitTest assembleDebug` passed with 388 actionable tasks (93 executed, 295 up-to-date).
 - Confirmed `.env`, local SQLite, dependency trees, web/Android builds, signing material, and generated Capacitor web assets remain ignored.
 - Task 001 is complete. Task 002 was not started.
+
+## 2026-08-06 — Task 002: mobile domain and transactional local storage
+
+- Added strict script/card/cue domain types, Web Crypto SHA-256 hashing, and pure cue reconciliation that retains cue strings and marks hash-mismatched sets `stale`, including manually edited cues.
+- Observed the domain RED: `npm run test:unit -- cueState` failed because `@/domain/scripts/cueState` did not exist. The focused GREEN passed with 4 tests, including a hand-derived SHA-256 digest for Cyrillic UTF-8 text.
+- Added application repository ports, a framework-neutral SQL driver/transaction boundary, local unit of work, normalized SQLite schema v1, and repositories for scripts, outbox commands, and recording sessions.
+- Observed the storage RED: `npm run test:unit -- SaveScriptAggregate` failed because the unit of work and SQLite implementation were absent. The finished integration suite passes 5 tests on Node 24's real in-memory SQLite.
+- `SaveScriptAggregate` now writes a complete aggregate and one `script.replace` snapshot in the same transaction. The suite proves an injected outbox failure leaves scripts, cards, and cue sets empty.
+- Pending outbox snapshots coalesce while preserving operation ID and base version. An in-flight command remains immutable and receives exactly one new pending successor.
+- Review exposed that delete/reinsert snapshot persistence cascaded into `recording_sessions`. A new regression test first failed with a missing recording cursor; card/cue UPSERTs now preserve the cursor while deleting only cards absent from the snapshot.
+- `CapacitorSqlDriver` is the only application module importing `@capacitor-community/sqlite`; native bootstrap applies migrations before router initialization. Foreign keys, schema tracking, all required local tables, and the card/outbox indexes are present.
+- Final mobile verification: `npm run test:unit` passed 10 tests in 3 files; `npm run typecheck`, `npm run build`, and `npm run cap:sync` exited successfully. Vitest prints Node's upstream experimental warning for the built-in `node:sqlite` test adapter.
+- Final native verification: `./gradlew testDebugUnitTest assembleDebug` completed successfully with 297 actionable tasks (26 executed, 271 up-to-date). The two existing Capacitor `flatDir` warnings remain unchanged.
+- Task 002 is complete. Task 003 was not started.

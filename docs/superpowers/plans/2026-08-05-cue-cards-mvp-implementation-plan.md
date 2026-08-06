@@ -199,16 +199,16 @@ it('renders the application landmark', () => {
 - Produces `SaveScriptAggregate.execute(input: SaveScriptInput): Promise<ScriptAggregate>`.
 - Consumes `SqlDriver.transaction<T>(work: (tx: SqlTransaction) => Promise<T>): Promise<T>`.
 
-- [ ] Define strict domain types with UUID strings, ISO timestamps, integer versions, ordered cards, cues as `readonly string[]`, and explicit `missing | pending | generating | ready | stale | failed` status.
-- [ ] Write `cueState.test.ts` first: unchanged text keeps a ready cue set, changed text keeps its cues but marks it stale, and manually edited cues are never cleared.
-- [ ] Run `npm run test:unit -- cueState`; expected failure: `reconcileCueState` is missing.
-- [ ] Implement `sha256(text): Promise<string>` with Web Crypto and `reconcileCueState(cueSet, nextHash)` as a pure function; rerun the focused test to green.
-- [ ] Define the SQL driver and transaction interfaces without importing Capacitor types into application or domain folders.
-- [ ] Add migration `001_initial.ts` creating `scripts`, `cards`, `cue_sets`, `outbox_commands`, `sync_state`, `recording_sessions`, `settings`, and `schema_migrations`; give outbox rows `pending | in_flight` state, attempts, and next-attempt time, enable foreign keys, and index `cards(script_id, position)` plus `outbox_commands(state, created_at)`.
-- [ ] Write `SaveScriptAggregate.test.ts` first. Save a two-card aggregate and assert script, cards, cue sets, and one `script.replace` outbox command are persisted atomically.
-- [ ] Add a rollback assertion by making the fake driver fail on the outbox insert and verifying that no script rows remain.
-- [ ] Run `npm run test:unit -- SaveScriptAggregate`; expected failure: the use case and SQLite repositories do not exist.
-- [ ] Implement `LocalUnitOfWork` and repositories, then implement `SaveScriptAggregate` so entity writes and outbox enqueue share one SQL transaction:
+- [x] Define strict domain types with UUID strings, ISO timestamps, integer versions, ordered cards, cues as `readonly string[]`, and explicit `missing | pending | generating | ready | stale | failed` status.
+- [x] Write `cueState.test.ts` first: unchanged text keeps a ready cue set, changed text keeps its cues but marks it stale, and manually edited cues are never cleared.
+- [x] Run `npm run test:unit -- cueState`; expected failure: `reconcileCueState` is missing.
+- [x] Implement `sha256(text): Promise<string>` with Web Crypto and `reconcileCueState(cueSet, nextHash)` as a pure function; rerun the focused test to green.
+- [x] Define the SQL driver and transaction interfaces without importing Capacitor types into application or domain folders.
+- [x] Add migration `001_initial.ts` creating `scripts`, `cards`, `cue_sets`, `outbox_commands`, `sync_state`, `recording_sessions`, `settings`, and `schema_migrations`; give outbox rows `pending | in_flight` state, attempts, and next-attempt time, enable foreign keys, and index `cards(script_id, position)` plus `outbox_commands(state, created_at)`.
+- [x] Write `SaveScriptAggregate.test.ts` first. Save a two-card aggregate and assert script, cards, cue sets, and one `script.replace` outbox command are persisted atomically.
+- [x] Add a rollback assertion by making the fake driver fail on the outbox insert and verifying that no script rows remain.
+- [x] Run `npm run test:unit -- SaveScriptAggregate`; expected failure: the use case and SQLite repositories do not exist.
+- [x] Implement `LocalUnitOfWork` and repositories, then implement `SaveScriptAggregate` so entity writes and outbox enqueue share one SQL transaction:
 
 ```ts
 return this.unitOfWork.run(async (tx) => {
@@ -225,10 +225,10 @@ return this.unitOfWork.run(async (tx) => {
 })
 ```
 
-- [ ] Implement `CapacitorSqlDriver` as the only module importing `@capacitor-community/sqlite`; initialize migrations before the router mounts.
-- [ ] Make `upsertLatestSnapshot` replace the payload of an unsent `pending` command for the same aggregate while preserving its operation ID/base version; if the prior command is `in_flight`, insert one new pending command instead.
-- [ ] Rerun both focused tests, then `npm run test:unit`, `npm run typecheck`, and an Android debug build.
-- [ ] Update the development log and commit: `feat(mobile): add offline script storage and outbox`.
+- [x] Implement `CapacitorSqlDriver` as the only module importing `@capacitor-community/sqlite`; initialize migrations before the router mounts.
+- [x] Make `upsertLatestSnapshot` replace the payload of an unsent `pending` command for the same aggregate while preserving its operation ID/base version; if the prior command is `in_flight`, insert one new pending command instead.
+- [x] Rerun both focused tests, then `npm run test:unit`, `npm run typecheck`, and an Android debug build.
+- [x] Update the development log and commit: `feat(mobile): add offline script storage and outbox`.
 
 ## Task 3: Parse Markdown/TXT and provide a correctable import draft
 

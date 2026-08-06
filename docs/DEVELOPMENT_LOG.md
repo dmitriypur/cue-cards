@@ -88,3 +88,20 @@
 - Final mobile verification: `npm run test:unit` passed 90 tests in 23 files; `npm run typecheck`, `npm run build`, and `npm run cap:sync` exited successfully. Vitest retains Node's upstream experimental warning for the built-in `node:sqlite` adapter.
 - Final native verification: `env JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ANDROID_HOME=/opt/homebrew/share/android-commandlinetools ./gradlew testDebugUnitTest assembleDebug` completed successfully with 297 actionable tasks (29 executed, 268 up-to-date). The two existing Capacitor `flatDir` warnings remain unchanged.
 - Task 006 is complete. Task 007 was not started.
+
+## 2026-08-06 — Task 007: Laravel identity, scripts, and superadmin access
+
+- Confirmed Tasks 001–006 from Git merges, completed task checkpoints, and recorded verification evidence before starting Task 007 on `codex/task-007-api-identity`.
+- Added backed server-owned `Role` and product `Feature` enums plus `EntitlementService`. `superadmin` is checked first and receives every current/future enum feature; ordinary users receive only explicit free features, and rate/payload/usage safeguards are not commercial entitlements.
+- Observed identity RED on missing classes; focused GREEN passed 6 tests/16 assertions.
+- Added portable UUID-keyed scripts/cards/cue-set migrations, integer optimistic versions, deterministic card positions, JSON cues, indexes, soft deletes, and the user role column without database-specific SQL.
+- Observed auth RED as four 404 responses for missing endpoints. Implemented closed Sanctum login/logout, `/api/v1/me`, validation, resources, and safe stable error envelopes. Follow-up RED reproduced unsafe default 405/500 payloads; GREEN now sanitizes API HTTP and unexpected errors without exposing traces or exception messages.
+- Added equivalent password-hash work for unknown emails, current-token-only logout, authenticated `/me` coverage, full superadmin entitlements, and absence of password/access-token fields from identity responses.
+- Observed script-read RED with the owner path still returning 404. Implemented Eloquent persistence maps, `ScriptPolicy::denyAsNotFound`, one `GetScript` action, deterministic eager loading, and a resource that keeps other users' nested cards/cues inaccessible.
+- Observed seeder RED on the missing class. `SuperadminSeeder` now requires `SUPERADMIN_NAME`, `SUPERADMIN_EMAIL`, and `SUPERADMIN_PASSWORD`, assigns the server role, and relies on the model's hashed password cast; `.env.example` contains only empty field names.
+- Added an independent PostgreSQL 16 GitHub Actions job with `pdo_pgsql` and the same API suite. Local PostgreSQL parity was not executed because Docker was stopped and no local PostgreSQL server responded; CI remains the acceptance gate for that environment.
+- Independent code review found no Critical issues. The Important generic API error-envelope issue and Minor unknown-email timing plus `/me` contract gaps were corrected.
+- Final API verification: `php artisan test` passed 23 tests/97 assertions; `./vendor/bin/pint --test` passed.
+- Disposable SQLite verification: `migrate:fresh --seed --force` completed all migrations and `SuperadminSeeder` using synthetic environment values.
+- Mobile regression verification: `npm run test:unit` passed 90 tests in 23 files; `npm run typecheck` and `npm run build` exited successfully. The existing Node experimental SQLite warning remains unchanged.
+- Task 007 is complete. Task 008 was not started.

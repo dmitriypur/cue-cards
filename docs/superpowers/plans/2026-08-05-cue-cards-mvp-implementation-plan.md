@@ -258,21 +258,21 @@ return this.unitOfWork.run(async (tx) => {
 - Produces draft operations `rename`, `moveBlock`, `splitBlock`, `mergeWithNext`, and `removeEmptyBlock` without writing SQLite.
 - Consumes `SaveScriptAggregate` only after preview validation succeeds.
 
-- [ ] Add synthetic fixtures with a Cyrillic `#` title, at least three `##` blocks, an internal `###` heading, and a TXT file with both clear and ambiguous heading candidates.
-- [ ] Write Markdown parser tests asserting `#` becomes the script title, every `##` starts a card, `###` remains in full text, filename is the fallback title, and empty cards produce validation issues.
-- [ ] Run `npm run test:unit -- MarkdownScriptParser`; expected failure: parser module not found.
-- [ ] Implement a line-oriented Markdown parser that preserves original block text and line endings normalized to `\n`; rerun the focused tests.
-- [ ] Write TXT parser tests for the exact heuristic: a candidate heading is a trimmed line of 1–80 characters, surrounded by blank lines or file boundaries, and not ending in `.`, `!`, `?`, `,`, `:`, or `;`.
-- [ ] Run `npm run test:unit -- TextScriptParser`; expected failure: parser module not found.
-- [ ] Implement the deterministic TXT parser and return warnings for ambiguous structure; never call AI from either parser.
-- [ ] Implement `ParseSourceDocument` validation for `.md`/`.txt`, UTF-8 decoding, a 1 MiB technical limit, empty files, and SHA-256 import hash.
-- [ ] Implement `CapacitorSourceFilePicker` with `FilePicker.pickFiles({ limit: 1, readData: true, types: ['text/plain', 'text/markdown'] })`; keep plugin data conversion inside the adapter.
-- [ ] Write the preview component test first: warnings and empty-block errors render with readable dark text on a light surface, Save is disabled for errors, and split/merge/reorder actions emit draft changes.
-- [ ] Run the focused component test; expected failure: preview components are absent.
-- [ ] Build `ImportSourceView`, `ImportPreviewView`, `ImportBlockCard`, and the import store using semantic tokens `--surface`, `--surface-foreground`, `--muted`, and `--muted-foreground`; do not use literal white text on light cards.
-- [ ] Add routes `/import` and `/import/preview`; Save constructs client UUIDv7 identifiers and calls `SaveScriptAggregate`, while Cancel discards only the in-memory draft.
-- [ ] Run parser and component suites, strict typecheck, production build, and Android debug build.
-- [ ] Update the development log and commit: `feat(mobile): import markdown and text scripts`.
+- [x] Add synthetic fixtures with a Cyrillic `#` title, at least three `##` blocks, an internal `###` heading, and a TXT file with both clear and ambiguous heading candidates.
+- [x] Write Markdown parser tests asserting `#` becomes the script title, every `##` starts a card, `###` remains in full text, filename is the fallback title, and empty cards produce validation issues.
+- [x] Run `npm run test:unit -- MarkdownScriptParser`; expected failure: parser module not found.
+- [x] Implement a line-oriented Markdown parser that preserves original block text and line endings normalized to `\n`; rerun the focused tests.
+- [x] Write TXT parser tests for the exact heuristic: a candidate heading is a trimmed line of 1–80 characters, surrounded by blank lines or file boundaries, and not ending in `.`, `!`, `?`, `,`, `:`, or `;`.
+- [x] Run `npm run test:unit -- TextScriptParser`; expected failure: parser module not found.
+- [x] Implement the deterministic TXT parser and return warnings for ambiguous structure; never call AI from either parser.
+- [x] Implement `ParseSourceDocument` validation for `.md`/`.txt`, UTF-8 decoding, a 1 MiB technical limit, empty files, and SHA-256 import hash.
+- [x] Implement `CapacitorSourceFilePicker` with `FilePicker.pickFiles({ limit: 1, readData: true, types: ['text/plain', 'text/markdown'] })`; keep plugin data conversion inside the adapter.
+- [x] Write the preview component test first: warnings and empty-block errors render with readable dark text on a light surface, Save is disabled for errors, and split/merge/reorder actions emit draft changes.
+- [x] Run the focused component test; expected failure: preview components are absent.
+- [x] Build `ImportSourceView`, `ImportPreviewView`, `ImportBlockCard`, and the import store using semantic tokens `--surface`, `--surface-foreground`, `--muted`, and `--muted-foreground`; do not use literal white text on light cards.
+- [x] Add routes `/import` and `/import/preview`; Save constructs client UUIDv7 identifiers and calls `SaveScriptAggregate`, while Cancel discards only the in-memory draft.
+- [x] Run parser and component suites, strict typecheck, production build, and Android debug build.
+- [x] Update the development log and commit: `feat(mobile): import markdown and text scripts`.
 
 ## Task 4: Build the offline library and local script lifecycle
 

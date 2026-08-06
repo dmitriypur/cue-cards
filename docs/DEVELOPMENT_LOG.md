@@ -38,3 +38,15 @@
 - Final mobile verification: `npm run test:unit` passed 10 tests in 3 files; `npm run typecheck`, `npm run build`, and `npm run cap:sync` exited successfully. Vitest prints Node's upstream experimental warning for the built-in `node:sqlite` test adapter.
 - Final native verification: `./gradlew testDebugUnitTest assembleDebug` completed successfully with 297 actionable tasks (26 executed, 271 up-to-date). The two existing Capacitor `flatDir` warnings remain unchanged.
 - Task 002 is complete. Task 003 was not started.
+
+## 2026-08-06 — Task 003: Markdown/TXT import and correctable preview
+
+- Added synthetic Cyrillic Markdown/TXT fixtures. Markdown parsing uses `#` for the title, `##` for cards, preserves `###` in full text, normalizes line endings, and reports empty blocks. TXT parsing follows the documented 1–80 character punctuation-free isolated-line heuristic and reports ambiguous structure without AI.
+- Observed focused RED failures for the missing Markdown parser, TXT parser, source validation, draft editor, Capacitor picker, import workflow, aggregate builder, source view, and preview components; each focused suite passed after its minimal implementation.
+- Source validation accepts only `.md`/`.txt`, rejects empty or over-1-MiB UTF-8 content using both metadata and actual byte length, and records a SHA-256 import hash. The Capacitor adapter decodes selected bytes with fatal UTF-8 validation.
+- Preview changes remain in Pinia memory until Save. Split, merge, reorder, rename, empty-block removal, semantic warning/error surfaces, and Save blocking are covered. Cancel clears only the draft.
+- `SaveImportDraft` creates client identifiers, content hashes, missing cue sets, and a pending aggregate, then delegates persistence to Task 002's transactional `SaveScriptAggregate`; no network request participates in the local save.
+- Final API verification: `php artisan test` passed 3 tests/3 assertions; `./vendor/bin/pint --test` passed.
+- Final mobile verification: `npm run test:unit` passed 45 tests in 12 files; `npm run typecheck`, `npm run build`, and `npm run cap:sync` exited successfully.
+- Final native verification: `./gradlew testDebugUnitTest assembleDebug` completed successfully with 297 actionable tasks (29 executed, 268 up-to-date). The two existing Capacitor `flatDir` warnings remain unchanged.
+- Task 003 is complete. Task 004 was not started.

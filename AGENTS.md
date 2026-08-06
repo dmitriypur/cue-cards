@@ -32,6 +32,7 @@
 - Implement one numbered task from the detailed plan at a time.
 - Use test-driven development: write the failing test, run it and confirm the intended failure, implement the minimum behavior, then rerun the focused and relevant full suites.
 - Keep commits small and scoped to one coherent task. Never commit a failing test suite.
+- After a numbered task is completed and committed on its task branch, merge that branch into `main` and verify the merge before starting the next task.
 - TypeScript must pass strict type checking with no `any` escape hatches in application code.
 - API contracts are defined in OpenAPI and generated into the mobile client; do not hand-maintain duplicate transport types.
 - Prefer small domain methods and application actions over business logic in Vue components, Pinia stores, controllers, jobs, or Eloquent models.

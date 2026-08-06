@@ -11,7 +11,16 @@ import { SaveImportDraft } from '@/application/import/SaveImportDraft'
 import { DeleteScript } from '@/application/scripts/DeleteScript'
 import { GetScript } from '@/application/scripts/GetScript'
 import { ListScripts } from '@/application/scripts/ListScripts'
+import { MergeCards } from '@/application/scripts/MergeCards'
+import { ReorderCards } from '@/application/scripts/ReorderCards'
 import { SaveScriptAggregate } from '@/application/scripts/SaveScriptAggregate'
+import { SplitCard } from '@/application/scripts/SplitCard'
+import { UpdateCard } from '@/application/scripts/UpdateCard'
+import { UpdateCues } from '@/application/scripts/UpdateCues'
+import {
+  editorDependenciesKey,
+  type EditorDependencies,
+} from '@/features/editor/editor.dependencies'
 import {
   importNavigationKey,
   importWorkflowKey,
@@ -22,6 +31,7 @@ import {
   type LibraryDependencies,
 } from '@/features/library/library.dependencies'
 import { CapacitorSourceFilePicker } from '@/infrastructure/capacitor/CapacitorSourceFilePicker'
+import { registerAppBackgroundListener } from '@/infrastructure/capacitor/CapacitorAppBackground'
 import { CapacitorSqlDriver } from '@/infrastructure/sqlite/CapacitorSqlDriver'
 import { LocalUnitOfWork } from '@/infrastructure/sqlite/LocalUnitOfWork'
 import { SqliteOutboxRepository } from '@/infrastructure/sqlite/SqliteOutboxRepository'
@@ -31,6 +41,7 @@ export async function bootstrapApp(): Promise<void> {
   const appRouter = createAppRouter()
   let importWorkflow: ImportWorkflow | null = null
   let libraryDependencies: LibraryDependencies | null = null
+  let editorDependencies: EditorDependencies | null = null
 
   if (Capacitor.isNativePlatform()) {
     const database = new CapacitorSqlDriver()
@@ -58,6 +69,16 @@ export async function bootstrapApp(): Promise<void> {
       deleteScript: new DeleteScript(scripts, saveAggregate),
       isOnline: () => navigator.onLine,
     }
+    const clock = { now: () => new Date().toISOString() }
+    editorDependencies = {
+      getScript: new GetScript(scripts, saveAggregate),
+      updateCard: new UpdateCard(scripts, saveAggregate, clock),
+      reorderCards: new ReorderCards(scripts, saveAggregate, clock),
+      splitCard: new SplitCard(scripts, saveAggregate, clock),
+      mergeCards: new MergeCards(scripts, saveAggregate, clock),
+      updateCues: new UpdateCues(scripts, saveAggregate, clock),
+      onAppBackground: registerAppBackgroundListener,
+    }
   }
 
   const app = createApp(App)
@@ -68,6 +89,7 @@ export async function bootstrapApp(): Promise<void> {
   if (libraryDependencies !== null) {
     app.provide(libraryDependenciesKey, libraryDependencies)
   }
+  if (editorDependencies !== null) app.provide(editorDependenciesKey, editorDependencies)
   app.provide(importNavigationKey, {
     openPreview: async () => { await appRouter.push('/import/preview') },
     openLibrary: async (scriptId?: string) => {

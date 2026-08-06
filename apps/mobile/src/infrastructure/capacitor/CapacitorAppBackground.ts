@@ -4,11 +4,19 @@ import type { PluginListenerHandle } from '@capacitor/core'
 export function registerAppBackgroundListener(
   listener: () => void | Promise<void>,
 ): () => void {
+  return registerAppStateListener((isActive) => {
+    if (!isActive) return listener()
+  })
+}
+
+export function registerAppStateListener(
+  listener: (isActive: boolean) => void | Promise<void>,
+): () => void {
   let active = true
   let handle: PluginListenerHandle | null = null
 
   void CapacitorApp.addListener('appStateChange', ({ isActive }) => {
-    if (active && !isActive) void listener()
+    if (active) void listener(isActive)
   }).then((registeredHandle) => {
     if (!active) {
       void registeredHandle.remove()

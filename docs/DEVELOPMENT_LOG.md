@@ -75,3 +75,16 @@
 - Final mobile verification: `npm run test:unit` passed 74 tests in 20 files; `npm run typecheck`, `npm run build`, and `npm run cap:sync` exited successfully. Vitest retains Node's upstream experimental warning for the built-in `node:sqlite` adapter.
 - Final native verification: `env JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ANDROID_HOME=/opt/homebrew/share/android-commandlinetools ./gradlew testDebugUnitTest assembleDebug` completed successfully with 297 actionable tasks (29 executed, 268 up-to-date). The two existing Capacitor `flatDir` warnings remain unchanged.
 - Task 005 is complete. Task 006 was not started.
+
+## 2026-08-06 — Task 006: offline recording focus mode
+
+- Added offline-only recording actions for starting at any active card, clamped previous/next navigation, persisted global cue/full mode and font scale, and explicit finish cleanup. Session writes use the existing SQLite recording repository and never depend on connectivity or the API.
+- Observed the application RED: `npm run test:unit -- RecordingSession` failed because the recording actions and wake-lock port were absent. The completed action suite passes selected-card start, cursor bounds, display persistence, finish release, and release after a failed local navigation write.
+- Added recording setup/focus views, progress and card titles, segmented mode controls, bounded internal full-text scrolling, 48×48 controls, horizontal swipe thresholds, per-card full-text scroll restoration, persistent session recovery, and the real `/scripts/:id/record` route.
+- Observed the UI RED: `npm run test:unit -- RecordingView` failed because the recording view did not exist. Later RED regressions reproduced rapid double-action snapshot loss, full→cues→full scroll loss, background/resume wake-lock gaps, route cleanup racing an in-flight acquire, and a load acquiring after unmount; all now pass through one serialized session/lifecycle queue.
+- Added `CapacitorWakeLock` around `KeepAwake.keepAwake()`/`allowSleep()`. Unsupported or failed native calls remain non-blocking and surface a safe localized warning. App background releases the lock, resume reacquires it, and route cleanup is ordered after pending lifecycle work.
+- Independent code review identified and verified fixes for mutation races, lifecycle races, unbounded focus content, discarded wake-lock warnings, duplicate cue keys, and mode-corrupted scroll offsets. No Critical or Important issue remains in the final reviewed snapshot.
+- Final API verification: `php artisan test` passed 3 tests/3 assertions; `./vendor/bin/pint --test` passed.
+- Final mobile verification: `npm run test:unit` passed 90 tests in 23 files; `npm run typecheck`, `npm run build`, and `npm run cap:sync` exited successfully. Vitest retains Node's upstream experimental warning for the built-in `node:sqlite` adapter.
+- Final native verification: `env JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ANDROID_HOME=/opt/homebrew/share/android-commandlinetools ./gradlew testDebugUnitTest assembleDebug` completed successfully with 297 actionable tasks (29 executed, 268 up-to-date). The two existing Capacitor `flatDir` warnings remain unchanged.
+- Task 006 is complete. Task 007 was not started.

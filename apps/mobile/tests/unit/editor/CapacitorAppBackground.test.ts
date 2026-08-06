@@ -4,7 +4,10 @@ const { addListener } = vi.hoisted(() => ({ addListener: vi.fn() }))
 
 vi.mock('@capacitor/app', () => ({ App: { addListener } }))
 
-import { registerAppBackgroundListener } from '@/infrastructure/capacitor/CapacitorAppBackground'
+import {
+  registerAppBackgroundListener,
+  registerAppStateListener,
+} from '@/infrastructure/capacitor/CapacitorAppBackground'
 
 describe('registerAppBackgroundListener', () => {
   beforeEach(() => {
@@ -34,5 +37,23 @@ describe('registerAppBackgroundListener', () => {
     await Promise.resolve()
 
     expect(remove).toHaveBeenCalledOnce()
+  })
+})
+
+describe('registerAppStateListener', () => {
+  it('reports both background and resume state changes', async () => {
+    let nativeListener: ((state: { isActive: boolean }) => void) | null = null
+    addListener.mockImplementation((_event, listener) => {
+      nativeListener = listener
+      return Promise.resolve({ remove: vi.fn().mockResolvedValue(undefined) })
+    })
+    const states: boolean[] = []
+
+    registerAppStateListener((isActive) => { states.push(isActive) })
+    const notify = nativeListener as ((state: { isActive: boolean }) => void) | null
+    notify?.({ isActive: false })
+    notify?.({ isActive: true })
+
+    expect(states).toEqual([false, true])
   })
 })

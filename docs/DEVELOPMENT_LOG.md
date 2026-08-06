@@ -62,3 +62,16 @@
 - Final mobile verification: `npm run test:unit` passed 59 tests in 17 files; `npm run typecheck`, `npm run build`, and `npm run cap:sync` exited successfully. Vitest retains Node's upstream experimental warning for the built-in `node:sqlite` adapter.
 - Final native verification: `./gradlew testDebugUnitTest assembleDebug` completed successfully with 297 actionable tasks (29 executed, 268 up-to-date). The two existing Capacitor `flatDir` warnings remain unchanged.
 - Task 004 is complete. Task 005 was not started.
+
+## 2026-08-06 — Task 005: card editor and stale-cue rules
+
+- Added immutable application actions for card title/text updates, exact card reordering, Unicode code-point-safe splitting, merge-with-next, and 3–5 manual cue edits. Every successful mutation delegates once to `SaveScriptAggregate`, keeps the original `sourceText`, and marks the aggregate pending for sync.
+- Observed the application RED: `npm run test:unit -- CardEditing` failed because the editor action modules did not exist. Focused GREEN passes 9 tests covering content hashes, retained stale cues, exact order validation, split/merge boundaries, and manual cue validation without full-text replacement.
+- Added the Pinia editor store, injected dependencies, editor route, draggable/reorder controls, accessible split/merge dialogs, editable cue lists, semantic light/dark surfaces, and minimum 48×48 controls. Text edits debounce for 350 ms and flush on app background/unmount before dependent mutations.
+- Observed the component RED: `npm run test:unit -- ScriptEditorView` failed because the editor dependency/view modules did not exist. The completed component suite covers card count/statuses, local save state, fields, reorder, split, confirmed merge, manual cues, background flush, and semantic/accessibility contracts.
+- Review reproduced a snapshot race: flushing two pending cards started two `UpdateCard` actions concurrently. The regression test failed with two calls before the first completed; `flushAll` now persists drafts sequentially so every action reads the preceding committed local aggregate.
+- Extracted Capacitor app-state subscription into an infrastructure adapter. Focused RED failed on the missing adapter; GREEN proves registered and late-registering native listener handles are both removed during cleanup. Added the missing accessible drag handle required by `vue-draggable-plus`.
+- Final API verification: `php artisan test` passed 3 tests/3 assertions; `./vendor/bin/pint --test` passed.
+- Final mobile verification: `npm run test:unit` passed 74 tests in 20 files; `npm run typecheck`, `npm run build`, and `npm run cap:sync` exited successfully. Vitest retains Node's upstream experimental warning for the built-in `node:sqlite` adapter.
+- Final native verification: `env JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ANDROID_HOME=/opt/homebrew/share/android-commandlinetools ./gradlew testDebugUnitTest assembleDebug` completed successfully with 297 actionable tasks (29 executed, 268 up-to-date). The two existing Capacitor `flatDir` warnings remain unchanged.
+- Task 005 is complete. Task 006 was not started.

@@ -295,16 +295,16 @@ return this.unitOfWork.run(async (tx) => {
 - Produces `DeleteScript.execute(scriptId: string): Promise<void>` that soft-deletes locally and enqueues the changed aggregate.
 - Consumes `ScriptRepository`, `OutboxRepository`, and router navigation only through injected composition-root dependencies.
 
-- [ ] Write `LibraryView.test.ts` first with empty, populated, generating, stale, failed, pending-sync, and offline states; assert the primary import action and per-script Record/Edit actions.
-- [ ] Run `npm run test:unit -- LibraryView`; expected failure: library view and store do not exist.
-- [ ] Implement `ListScripts`, a store with `idle | loading | ready | failed` state, and library components without API calls in the component.
-- [ ] Ensure cards and text use semantic foreground tokens in light and dark themes; add a component assertion that the light script tile uses `text-surface-foreground` rather than `text-white`.
-- [ ] Write `DeleteScript.test.ts` first: confirmation soft-deletes the script and creates one outbox command; cancellation changes nothing.
-- [ ] Run the focused delete test; expected failure: `DeleteScript` is missing.
-- [ ] Implement deletion through `SaveScriptAggregate`/unit of work and show an undo snackbar; undo replaces the still-pending delete snapshot with the restored aggregate, or creates a new pending snapshot only when deletion is already in flight.
-- [ ] Wire routes `/library`, `/scripts/:id/edit`, and `/scripts/:id/record`; opening a script updates `lastOpenedAt` locally.
-- [ ] Run all mobile unit/integration tests, typecheck, build, and the debug Android build.
-- [ ] Update the development log and commit: `feat(mobile): add offline script library`.
+- [x] Write `LibraryView.test.ts` first with empty, populated, generating, stale, failed, pending-sync, and offline states; assert the primary import action and per-script Record/Edit actions.
+- [x] Run `npm run test:unit -- LibraryView`; expected failure: library view and store do not exist.
+- [x] Implement `ListScripts`, a store with `idle | loading | ready | failed` state, and library components without API calls in the component.
+- [x] Ensure cards and text use semantic foreground tokens in light and dark themes; add a component assertion that the light script tile uses `text-surface-foreground` rather than `text-white`.
+- [x] Write `DeleteScript.test.ts` first: confirmation soft-deletes the script and creates one outbox command; cancellation changes nothing.
+- [x] Run the focused delete test; expected failure: `DeleteScript` is missing.
+- [x] Implement deletion through `SaveScriptAggregate`/unit of work and show an undo snackbar; undo replaces the still-pending delete snapshot with the restored aggregate, or creates a new pending snapshot only when deletion is already in flight.
+- [x] Wire routes `/library`, `/scripts/:id/edit`, and `/scripts/:id/record`; opening a script updates `lastOpenedAt` locally.
+- [x] Run all mobile unit/integration tests, typecheck, build, and the debug Android build.
+- [x] Update the development log and commit: `feat(mobile): add offline script library`.
 
 ## Task 5: Implement the card editor and stale-cue rules
 
@@ -332,17 +332,17 @@ return this.unitOfWork.run(async (tx) => {
 - Produces `UpdateCues.execute({ scriptId, cardId, cues }): Promise<ScriptAggregate>` enforcing 3–5 trimmed non-empty cues and `manuallyEdited=true`.
 - Consumes `SaveScriptAggregate` for every successful mutation.
 
-- [ ] Write pure use-case tests first for title/text editing, exact order normalization, split at a Unicode-safe string offset, merge with the next card, last-card merge rejection, and 3–5 cue validation.
-- [ ] Add assertions that editing full text recalculates `contentHash`, marks prior AI cues stale, retains cue strings, and never changes full text when cues are edited.
-- [ ] Run `npm run test:unit -- CardEditing`; expected failure: editor use cases are absent.
-- [ ] Implement the five use cases with immutable aggregate copies and one `SaveScriptAggregate` call per user action; rerun focused tests.
-- [ ] Write `ScriptEditorView.test.ts` first: it renders card count and statuses, saves fields, reorders, opens split/merge controls, edits individual cues, and shows an accessible confirmation before destructive actions.
-- [ ] Run the component test; expected failure: editor components are absent.
-- [ ] Implement `ScriptEditorView`, `EditableCard`, and `CueListEditor`; use `vue-draggable-plus` only in the view adapter and pass the resulting ID order to `ReorderCards`.
-- [ ] Debounce text field persistence by 350 ms while flushing immediately on route leave and app background; display saved/pending state from the local repository, not from network state.
-- [ ] Use minimum 48×48 CSS-pixel touch targets, visible focus rings, and surface/foreground pairs in both themes.
-- [ ] Run editor tests, the complete mobile suite, typecheck, build, and Android debug build.
-- [ ] Update the development log and commit: `feat(mobile): add card and cue editor`.
+- [x] Write pure use-case tests first for title/text editing, exact order normalization, split at a Unicode-safe string offset, merge with the next card, last-card merge rejection, and 3–5 cue validation.
+- [x] Add assertions that editing full text recalculates `contentHash`, marks prior AI cues stale, retains cue strings, and never changes full text when cues are edited.
+- [x] Run `npm run test:unit -- CardEditing`; expected failure: editor use cases are absent.
+- [x] Implement the five use cases with immutable aggregate copies and one `SaveScriptAggregate` call per user action; rerun focused tests.
+- [x] Write `ScriptEditorView.test.ts` first: it renders card count and statuses, saves fields, reorders, opens split/merge controls, edits individual cues, and shows an accessible confirmation before destructive actions.
+- [x] Run the component test; expected failure: editor components are absent.
+- [x] Implement `ScriptEditorView`, `EditableCard`, and `CueListEditor`; use `vue-draggable-plus` only in the view adapter and pass the resulting ID order to `ReorderCards`.
+- [x] Debounce text field persistence by 350 ms while flushing immediately on route leave and app background; display saved/pending state from the local repository, not from network state.
+- [x] Use minimum 48×48 CSS-pixel touch targets, visible focus rings, and surface/foreground pairs in both themes.
+- [x] Run editor tests, the complete mobile suite, typecheck, build, and Android debug build.
+- [x] Update the development log and commit: `feat(mobile): add card and cue editor`.
 
 ## Task 6: Deliver the offline recording focus mode
 

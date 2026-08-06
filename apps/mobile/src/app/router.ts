@@ -3,6 +3,7 @@ import { createRouter, createWebHistory, type Router } from 'vue-router'
 
 import ImportPreviewView from '@/features/import/ImportPreviewView.vue'
 import ImportSourceView from '@/features/import/ImportSourceView.vue'
+import ScriptEditorView from '@/features/editor/ScriptEditorView.vue'
 import LibraryView from '@/features/library/LibraryView.vue'
 
 const PlannedFeatureView = defineComponent({
@@ -24,7 +25,12 @@ export function createAppRouter(): Router {
       { path: '/library', name: 'library', component: LibraryView },
       { path: '/import', name: 'import-source', component: ImportSourceView },
       { path: '/import/preview', name: 'import-preview', component: ImportPreviewView },
-      { path: '/scripts/:id/edit', name: 'script-edit', component: PlannedFeatureView },
+      {
+        path: '/scripts/:id/edit',
+        name: 'script-edit',
+        component: ScriptEditorView,
+        props: (route) => ({ scriptId: route.params.id }),
+      },
       { path: '/scripts/:id/record', name: 'script-record', component: PlannedFeatureView },
     ],
   })

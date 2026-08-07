@@ -505,20 +505,20 @@ return this.unitOfWork.run(async (tx) => {
 - Produces `GetSyncChanges::handle(User $user, int $afterCursor, int $limit): SyncPage`.
 - Consumes commands shaped as `{ operation_id, aggregate_id, type: "script.replace", base_version, payload, created_at }`.
 
-- [ ] Write `ScriptSnapshotTest` first for UUID ownership, contiguous card positions, 3–5 cue validation when ready, matching script/card IDs, duplicate IDs, content hashes, and soft-delete snapshots.
-- [ ] Run `php artisan test --filter=ScriptSnapshotTest`; expected failure: snapshot DTO and domain validation are missing.
-- [ ] Implement immutable validated DTOs using Laravel validation only at the HTTP boundary and explicit domain exceptions inside the application layer.
-- [ ] Add `sync_operations` with globally unique `operation_id`, `user_id`, aggregate ID, result version, and timestamps; add append-only `sync_changes` with auto-increment cursor, user ID, aggregate ID, version, type, and snapshot JSON.
-- [ ] Write integration tests first for first apply, exact retry idempotency, two operations in request order, transaction rollback, ownership denial, stale `base_version`, and a successful soft delete.
-- [ ] Run `php artisan test --filter=SubmitSyncCommandsTest`; expected failure: sync actions and tables are missing.
-- [ ] Implement `ApplyScriptSnapshot` with `DB::transaction`, `lockForUpdate`, Eloquent persistence, one version increment, idempotency lookup, and one change-feed append.
-- [ ] Return `SyncConflict` before modifying rows when `base_version` differs. Include the submitted local snapshot and current server snapshot in the application result, but never write the losing snapshot.
-- [ ] Write API tests first for cursor pagination scoped to the authenticated user, maximum batch size 20, maximum snapshot size, duplicate operation response, and 409 error shape.
-- [ ] Run the focused API tests; expected failure: routes/controller/request/resource are missing.
-- [ ] Implement `POST /api/v1/sync/commands` and `GET /api/v1/sync?after={cursor}&limit={limit}` through thin request/controller/resource classes and update OpenAPI/generated types.
-- [ ] Add rate limiting keyed by user ID, payload limits, a correlation ID middleware, and structured logs containing only operation IDs, aggregate IDs, versions, and outcome.
-- [ ] Run sync unit/feature/integration tests against SQLite and PostgreSQL, full API suite, Pint, and OpenAPI drift check.
-- [ ] Update the development log and commit: `feat(api): add idempotent aggregate synchronization`.
+- [x] Write `ScriptSnapshotTest` first for UUID ownership, contiguous card positions, 3–5 cue validation when ready, matching script/card IDs, duplicate IDs, content hashes, and soft-delete snapshots.
+- [x] Run `php artisan test --filter=ScriptSnapshotTest`; expected failure: snapshot DTO and domain validation are missing.
+- [x] Implement immutable validated DTOs using Laravel validation only at the HTTP boundary and explicit domain exceptions inside the application layer.
+- [x] Add `sync_operations` with globally unique `operation_id`, `user_id`, aggregate ID, result version, and timestamps; add append-only `sync_changes` with auto-increment cursor, user ID, aggregate ID, version, type, and snapshot JSON.
+- [x] Write integration tests first for first apply, exact retry idempotency, two operations in request order, transaction rollback, ownership denial, stale `base_version`, and a successful soft delete.
+- [x] Run `php artisan test --filter=SubmitSyncCommandsTest`; expected failure: sync actions and tables are missing.
+- [x] Implement `ApplyScriptSnapshot` with `DB::transaction`, `lockForUpdate`, Eloquent persistence, one version increment, idempotency lookup, and one change-feed append.
+- [x] Return `SyncConflict` before modifying rows when `base_version` differs. Include the submitted local snapshot and current server snapshot in the application result, but never write the losing snapshot.
+- [x] Write API tests first for cursor pagination scoped to the authenticated user, maximum batch size 20, maximum snapshot size, duplicate operation response, and 409 error shape.
+- [x] Run the focused API tests; expected failure: routes/controller/request/resource are missing.
+- [x] Implement `POST /api/v1/sync/commands` and `GET /api/v1/sync?after={cursor}&limit={limit}` through thin request/controller/resource classes and update OpenAPI/generated types.
+- [x] Add rate limiting keyed by user ID, payload limits, a correlation ID middleware, and structured logs containing only operation IDs, aggregate IDs, versions, and outcome.
+- [x] Run sync unit/feature/integration tests against SQLite and PostgreSQL, full API suite, Pint, and OpenAPI drift check.
+- [x] Update the development log and commit: `feat(api): add idempotent aggregate synchronization`.
 
 ## Task 10: Run the mobile outbox and resolve sync conflicts explicitly
 

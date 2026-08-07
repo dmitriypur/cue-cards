@@ -213,6 +213,8 @@ export interface components {
         CardSnapshot: {
             /** Format: uuid */
             id: string;
+            /** Format: uuid */
+            script_id: string;
             position: number;
             title: string;
             full_text: string;
@@ -225,6 +227,8 @@ export interface components {
         CueSetSnapshot: {
             /** Format: uuid */
             id: string;
+            /** Format: uuid */
+            card_id: string;
             cues: string[];
             source_hash: string | null;
             /** @enum {string} */
@@ -539,6 +543,7 @@ export interface operations {
                      *         "cards": [
                      *           {
                      *             "id": "0198a70e-23a2-73df-8387-34636552833a",
+                     *             "script_id": "0198a70d-a717-70ae-a41d-905a2237bd18",
                      *             "position": 0,
                      *             "title": "Хук",
                      *             "full_text": "Короткий исходный текст.",
@@ -546,6 +551,7 @@ export interface operations {
                      *             "version": 2,
                      *             "cue_set": {
                      *               "id": "0198a70e-5670-704a-86bb-ced23df0704f",
+                     *               "card_id": "0198a70e-23a2-73df-8387-34636552833a",
                      *               "cues": [
                      *                 "Обозначить проблему",
                      *                 "Дать обещание",

@@ -29,4 +29,5 @@ Work through Task 11 only using RED/GREEN TDD, record exact verification evidenc
 - Implemented validated structured requests/results, DeepSeek adapter, database-backed generation lifecycle, ownership/entitlement/rate safeguards, deterministic batching, three-attempt job handling, safe failures, per-call usage, hash/manual-edit protection, and transactional sync publication.
 - Final SQLite API: 88 tests (87 passed, 1 PostgreSQL-only skipped), 615 assertions. PostgreSQL: 88 passed, 622 assertions. Pint passed.
 - Mobile regression: 150 tests, strict typecheck, production build, E2E gate, and deterministic contract generation at `3da42f7bc0e3800e9e997bfd27e5dcba17970e74` passed.
+- Database queue smoke used a disposable SQLite database: a synthetic probe was enqueued on `ai`, `php artisan queue:work --queue=ai --tries=3 --stop-when-empty --verbose` processed it as `DONE`, and the final state was `jobs=0`, `failed_jobs=0`, marker=`processed`. The temporary probe was removed afterward.
 - Task 011 is complete. Task 012 has not started.

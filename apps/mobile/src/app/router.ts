@@ -11,6 +11,7 @@ import ImportSourceView from '@/features/import/ImportSourceView.vue'
 import ScriptEditorView from '@/features/editor/ScriptEditorView.vue'
 import LibraryView from '@/features/library/LibraryView.vue'
 import RecordingView from '@/features/recording/RecordingView.vue'
+import ConflictResolutionView from '@/features/sync/ConflictResolutionView.vue'
 
 export function createAppRouter(authGuard?: NavigationGuard): Router {
   const router = createRouter({
@@ -18,7 +19,14 @@ export function createAppRouter(authGuard?: NavigationGuard): Router {
     routes: [
       { path: '/', redirect: '/login' },
       { path: '/login', name: 'login', component: LoginView },
-      { path: '/library', name: 'library', component: LibraryView },
+      {
+        path: '/library',
+        name: 'library',
+        component: LibraryView,
+        props: (route) => ({
+          focus: typeof route.query.focus === 'string' ? route.query.focus : undefined,
+        }),
+      },
       { path: '/import', name: 'import-source', component: ImportSourceView },
       { path: '/import/preview', name: 'import-preview', component: ImportPreviewView },
       {
@@ -32,6 +40,12 @@ export function createAppRouter(authGuard?: NavigationGuard): Router {
         name: 'script-record',
         component: RecordingView,
         props: (route) => ({ scriptId: route.params.id }),
+      },
+      {
+        path: '/sync/conflicts/:id',
+        name: 'sync-conflict',
+        component: ConflictResolutionView,
+        props: (route) => ({ conflictId: route.params.id }),
       },
     ],
   })

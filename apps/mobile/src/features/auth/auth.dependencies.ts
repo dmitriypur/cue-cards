@@ -6,6 +6,7 @@ import type { Logout } from '@/application/auth/Logout'
 export interface AuthDependencies {
   readonly login: Pick<Login, 'execute' | 'restore'>
   readonly logout: Pick<Logout, 'execute'>
+  readonly afterAuthenticated: () => Promise<void>
 }
 
 export interface AuthNavigation {

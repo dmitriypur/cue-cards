@@ -21,8 +21,15 @@ export interface StoredOutboxCommand extends OutboxCommand {
 
 export interface OutboxRepository {
   upsertLatestSnapshot(command: OutboxCommand, tx?: SqlTransaction): Promise<void>
-  next(): Promise<StoredOutboxCommand | null>
+  next(includeDeferred?: boolean): Promise<StoredOutboxCommand | null>
+  nextRetryAt(): Promise<string | null>
+  find(operationId: UUID): Promise<StoredOutboxCommand | null>
+  hasForAggregate(aggregateId: UUID, tx?: SqlTransaction): Promise<boolean>
+  recoverInterrupted(): Promise<void>
   markInFlight(operationId: UUID): Promise<void>
+  release(operationId: UUID): Promise<void>
+  scheduleRetry(operationId: UUID, nextAttemptAt: string): Promise<void>
+  removeForAggregate(aggregateId: UUID, tx?: SqlTransaction): Promise<void>
   acknowledge(operationId: UUID, serverVersion: number): Promise<void>
-  rebasePending(aggregateId: UUID, serverVersion: number): Promise<void>
+  rebasePending(aggregateId: UUID, serverVersion: number, tx?: SqlTransaction): Promise<void>
 }

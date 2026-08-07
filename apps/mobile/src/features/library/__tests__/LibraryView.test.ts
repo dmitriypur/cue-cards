@@ -45,6 +45,7 @@ function mountLibrary(options: {
   readonly scripts?: readonly ScriptSummary[]
   readonly restoredScripts?: readonly ScriptSummary[]
   readonly online?: boolean
+  readonly focus?: string
 } = {}) {
   let online = options.online ?? true
   const list = vi.fn().mockResolvedValue(options.scripts ?? [])
@@ -68,6 +69,7 @@ function mountLibrary(options: {
   }
 
   const wrapper = mount(LibraryView, {
+    props: options.focus === undefined ? {} : { focus: options.focus },
     global: {
       plugins: [createPinia()],
       provide: {
@@ -190,5 +192,14 @@ describe('LibraryView', () => {
     setOnline(true)
     await flushPromises()
     expect(wrapper.find('[data-testid="offline-status"]').exists()).toBe(false)
+  })
+
+  it('visibly focuses both scripts returned by local conflict duplication', async () => {
+    const { wrapper } = mountLibrary({ scripts: summaries, focus: 'stale,failed' })
+    await flushPromises()
+
+    expect(wrapper.get('[data-script-id="stale"]').attributes('data-focused')).toBe('true')
+    expect(wrapper.get('[data-script-id="failed"]').attributes('data-focused')).toBe('true')
+    expect(wrapper.get('[data-script-id="generating"]').attributes('data-focused')).toBe('false')
   })
 })

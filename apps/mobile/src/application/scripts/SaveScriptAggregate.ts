@@ -23,6 +23,7 @@ export class SaveScriptAggregate {
   private readonly unitOfWork: LocalUnitOfWork
   private readonly clock: Clock
   private readonly createOperationId: () => UUID
+  private readonly afterCommit: (aggregate: ScriptAggregate) => Promise<void> | void
 
   public constructor(
     scripts: ScriptRepository,
@@ -30,16 +31,18 @@ export class SaveScriptAggregate {
     unitOfWork: LocalUnitOfWork,
     clock: Clock = systemClock,
     createOperationId: () => UUID = uuidv7,
+    afterCommit: (aggregate: ScriptAggregate) => Promise<void> | void = () => undefined,
   ) {
     this.scripts = scripts
     this.outbox = outbox
     this.unitOfWork = unitOfWork
     this.clock = clock
     this.createOperationId = createOperationId
+    this.afterCommit = afterCommit
   }
 
-  public execute(input: SaveScriptInput): Promise<ScriptAggregate> {
-    return this.unitOfWork.run(async (tx) => {
+  public async execute(input: SaveScriptInput): Promise<ScriptAggregate> {
+    const saved = await this.unitOfWork.run(async (tx) => {
       await this.scripts.save(input.aggregate, tx)
       await this.outbox.upsertLatestSnapshot(
         {
@@ -55,5 +58,7 @@ export class SaveScriptAggregate {
 
       return input.aggregate
     })
+    await this.afterCommit(saved)
+    return saved
   }
 }

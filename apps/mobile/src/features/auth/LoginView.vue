@@ -29,7 +29,10 @@ async function submit(): Promise<void> {
       password: submittedPassword,
       device_name: deviceName.value.trim(),
     })
-    if (authenticated) await navigation.openLibrary()
+    if (authenticated) {
+      await dependencies.afterAuthenticated()
+      await navigation.openLibrary()
+    }
   } finally {
     password.value = ''
   }

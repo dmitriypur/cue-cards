@@ -12,12 +12,15 @@ import type {
   SqlValue,
 } from '@/infrastructure/sqlite/SqlDriver'
 import { migrateInitialSchema } from '@/infrastructure/sqlite/migrations/001_initial'
+import { migrateSyncConflicts } from '@/infrastructure/sqlite/migrations/002_sync_conflicts'
+import { SerializedTransactionQueue } from '@/infrastructure/sqlite/SerializedTransactionQueue'
 
 const databaseName = 'cue_cards'
 
 export class CapacitorSqlDriver implements SqlDriver {
   private readonly sqlite = new SQLiteConnection(CapacitorSQLite)
   private database: SQLiteDBConnection | null = null
+  private readonly operations = new SerializedTransactionQueue()
 
   public async initialize(): Promise<void> {
     const existing = await this.sqlite.isConnection(databaseName, false)
@@ -27,13 +30,55 @@ export class CapacitorSqlDriver implements SqlDriver {
 
     await this.database.open()
     await migrateInitialSchema(this)
+    await migrateSyncConflicts(this)
   }
 
   public async execute(statements: string): Promise<void> {
-    await this.connection().execute(statements, false)
+    await this.operations.run(() => this.executeRaw(statements))
   }
 
   public async run(
+    statement: string,
+    values: readonly SqlValue[] = [],
+  ): Promise<SqlRunResult> {
+    return this.operations.run(() => this.runRaw(statement, values))
+  }
+
+  public async query<T extends SqlRow>(
+    statement: string,
+    values: readonly SqlValue[] = [],
+  ): Promise<readonly T[]> {
+    return this.operations.run(() => this.queryRaw<T>(statement, values))
+  }
+
+  public async transaction<T>(work: (tx: SqlTransaction) => Promise<T>): Promise<T> {
+    return this.operations.run(async () => {
+      const database = this.connection()
+      const transaction: SqlTransaction = {
+        execute: (statements) => this.executeRaw(statements),
+        run: (statement, values = []) => this.runRaw(statement, values),
+        query: <Row extends SqlRow = SqlRow>(statement: string, values: readonly SqlValue[] = []) => {
+          return this.queryRaw<Row>(statement, values)
+        },
+      }
+      await database.beginTransaction()
+
+      try {
+        const result = await work(transaction)
+        await database.commitTransaction()
+        return result
+      } catch (error) {
+        await database.rollbackTransaction()
+        throw error
+      }
+    })
+  }
+
+  private async executeRaw(statements: string): Promise<void> {
+    await this.connection().execute(statements, false)
+  }
+
+  private async runRaw(
     statement: string,
     values: readonly SqlValue[] = [],
   ): Promise<SqlRunResult> {
@@ -47,7 +92,7 @@ export class CapacitorSqlDriver implements SqlDriver {
     }
   }
 
-  public async query<T extends SqlRow>(
+  private async queryRaw<T extends SqlRow>(
     statement: string,
     values: readonly SqlValue[] = [],
   ): Promise<readonly T[]> {
@@ -59,20 +104,6 @@ export class CapacitorSqlDriver implements SqlDriver {
     }
 
     return rows.map((row) => this.toSqlRow(row) as T)
-  }
-
-  public async transaction<T>(work: (tx: SqlTransaction) => Promise<T>): Promise<T> {
-    const database = this.connection()
-    await database.beginTransaction()
-
-    try {
-      const result = await work(this)
-      await database.commitTransaction()
-      return result
-    } catch (error) {
-      await database.rollbackTransaction()
-      throw error
-    }
   }
 
   private connection(): SQLiteDBConnection {

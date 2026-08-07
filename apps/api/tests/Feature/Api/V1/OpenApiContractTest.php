@@ -115,6 +115,14 @@ class OpenApiContractTest extends TestCase
             return;
         }
 
+        if (isset($schema['allOf'])) {
+            foreach ($schema['allOf'] as $composedSchema) {
+                $this->assertMatchesSchema($value, $composedSchema, $document, $path);
+            }
+
+            return;
+        }
+
         if (isset($schema['enum'])) {
             $this->assertContains($value, $schema['enum'], "Unexpected enum value at {$path}");
         }

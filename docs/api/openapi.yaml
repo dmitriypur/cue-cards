@@ -452,8 +452,9 @@ components:
           format: date-time
           nullable: true
         cue_set:
-          $ref: '#/components/schemas/CueSetSnapshot'
           nullable: true
+          allOf:
+            - $ref: '#/components/schemas/CueSetSnapshot'
     CueSetSnapshot:
       type: object
       additionalProperties: false

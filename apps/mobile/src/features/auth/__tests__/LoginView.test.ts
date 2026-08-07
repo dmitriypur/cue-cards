@@ -43,6 +43,7 @@ function mountLogin(execute: AuthDependencies['login']['execute']) {
       restore: vi.fn().mockResolvedValue({ mode: 'local-only', user: null }),
     },
     logout: { execute: vi.fn().mockResolvedValue(undefined) },
+    afterAuthenticated: vi.fn().mockResolvedValue(undefined),
   }
   const wrapper = mount(LoginView, {
     global: {
@@ -54,14 +55,14 @@ function mountLogin(execute: AuthDependencies['login']['execute']) {
     },
   })
 
-  return { wrapper, pinia, navigation }
+  return { wrapper, pinia, navigation, dependencies }
 }
 
 describe('LoginView', () => {
   it('submits email, password, and device name, shows loading, then forgets the password', async () => {
     const pending = deferred<components['schemas']['User']>()
     const execute = vi.fn().mockReturnValue(pending.promise)
-    const { wrapper, pinia, navigation } = mountLogin(execute)
+    const { wrapper, pinia, navigation, dependencies } = mountLogin(execute)
 
     await wrapper.get('input[name="email"]').setValue('owner@example.test')
     await wrapper.get('input[name="password"]').setValue('correct-password')
@@ -81,6 +82,9 @@ describe('LoginView', () => {
       password: 'correct-password',
       device_name: 'Pixel 9',
     })
+    expect(dependencies.afterAuthenticated).toHaveBeenCalledOnce()
+    expect(vi.mocked(dependencies.afterAuthenticated).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(navigation.openLibrary).mock.invocationCallOrder[0]!)
     expect(navigation.openLibrary).toHaveBeenCalledOnce()
     expect((wrapper.get('input[name="password"]').element as HTMLInputElement).value).toBe('')
     expect(JSON.stringify(useAuthStore(pinia).$state)).not.toContain('correct-password')

@@ -24,6 +24,10 @@ import { SaveScriptAggregate } from '@/application/scripts/SaveScriptAggregate'
 import { SplitCard } from '@/application/scripts/SplitCard'
 import { UpdateCard } from '@/application/scripts/UpdateCard'
 import { UpdateCues } from '@/application/scripts/UpdateCues'
+import { ApplyRemoteChanges } from '@/application/sync/ApplyRemoteChanges'
+import { RecordSyncConflict } from '@/application/sync/RecordSyncConflict'
+import { ResolveConflict } from '@/application/sync/ResolveConflict'
+import { RunSync } from '@/application/sync/RunSync'
 import {
   authDependenciesKey,
   authNavigationKey,
@@ -46,6 +50,14 @@ import {
   recordingDependenciesKey,
   type RecordingDependencies,
 } from '@/features/recording/recording.dependencies'
+import {
+  syncDependenciesKey,
+  syncNavigationKey,
+  type SyncDependencies,
+} from '@/features/sync/sync.dependencies'
+import { useSyncStore } from '@/features/sync/sync.store'
+import { HttpSyncGateway } from '@/infrastructure/api/HttpSyncGateway'
+import { CapacitorConnectivity } from '@/infrastructure/capacitor/CapacitorConnectivity'
 import { CapacitorSourceFilePicker } from '@/infrastructure/capacitor/CapacitorSourceFilePicker'
 import { SecureTokenStore } from '@/infrastructure/capacitor/SecureTokenStore'
 import {
@@ -57,8 +69,10 @@ import { ApiClient } from '@/infrastructure/api/ApiClient'
 import { CapacitorSqlDriver } from '@/infrastructure/sqlite/CapacitorSqlDriver'
 import { LocalUnitOfWork } from '@/infrastructure/sqlite/LocalUnitOfWork'
 import { SqliteOutboxRepository } from '@/infrastructure/sqlite/SqliteOutboxRepository'
+import { SqliteConflictRepository } from '@/infrastructure/sqlite/SqliteConflictRepository'
 import { SqliteRecordingSessionRepository } from '@/infrastructure/sqlite/SqliteRecordingSessionRepository'
 import { SqliteScriptRepository } from '@/infrastructure/sqlite/SqliteScriptRepository'
+import { SqliteSyncStateRepository } from '@/infrastructure/sqlite/SqliteSyncStateRepository'
 
 export async function bootstrapApp(): Promise<void> {
   const pinia = createPinia()
@@ -79,17 +93,29 @@ export async function bootstrapApp(): Promise<void> {
   let libraryDependencies: LibraryDependencies | null = null
   let editorDependencies: EditorDependencies | null = null
   let recordingDependencies: RecordingDependencies | null = null
+  let syncDependencies: SyncDependencies | null = null
+  let runSync: RunSync | null = null
+  const syncStore = useSyncStore(pinia)
 
   if (Capacitor.isNativePlatform()) {
     const database = new CapacitorSqlDriver()
     await database.initialize()
     const scripts = new SqliteScriptRepository(database)
     const outbox = new SqliteOutboxRepository(database)
+    const conflicts = new SqliteConflictRepository(database)
+    const syncState = new SqliteSyncStateRepository(database)
+    const unitOfWork = new LocalUnitOfWork(database)
     const sessions = new SqliteRecordingSessionRepository(database)
+    const clock = { now: () => new Date().toISOString() }
     const saveAggregate = new SaveScriptAggregate(
       scripts,
       outbox,
-      new LocalUnitOfWork(database),
+      unitOfWork,
+      clock,
+      uuidv7,
+      () => {
+        if (runSync !== null) void syncStore.run(runSync, 'connectivity')
+      },
     )
     const saveDraft = new SaveImportDraft(
       saveAggregate,
@@ -107,7 +133,6 @@ export async function bootstrapApp(): Promise<void> {
       deleteScript: new DeleteScript(scripts, saveAggregate),
       isOnline: () => navigator.onLine,
     }
-    const clock = { now: () => new Date().toISOString() }
     editorDependencies = {
       getScript: new GetScript(scripts, saveAggregate),
       updateCard: new UpdateCard(scripts, saveAggregate, clock),
@@ -129,13 +154,62 @@ export async function bootstrapApp(): Promise<void> {
       onAppStateChange: registerAppStateListener,
       openLibrary: async () => { await appRouter.push('/library') },
     }
+    const connectivity = new CapacitorConnectivity()
+    const gateway = new HttpSyncGateway(api)
+    const applyRemoteChanges = new ApplyRemoteChanges(scripts, outbox, syncState, unitOfWork)
+    const recordConflict = new RecordSyncConflict(
+      conflicts,
+      scripts,
+      unitOfWork,
+      uuidv7,
+      clock,
+    )
+    runSync = new RunSync(
+      connectivity,
+      gateway,
+      scripts,
+      outbox,
+      syncState,
+      applyRemoteChanges,
+      recordConflict,
+    )
+    const activeRunSync = runSync
+    syncDependencies = {
+      conflicts,
+      resolveConflict: new ResolveConflict(
+        scripts,
+        outbox,
+        conflicts,
+        unitOfWork,
+        uuidv7,
+        clock,
+      ),
+      runSync: activeRunSync,
+    }
+    connectivity.subscribe((online) => {
+      if (!online) {
+        syncStore.state = 'offline'
+        return
+      }
+      void syncStore.run(activeRunSync, 'connectivity')
+    })
+    registerAppStateListener((isActive) => {
+      if (isActive) void syncStore.run(activeRunSync, 'connectivity')
+    })
+    void syncStore.run(activeRunSync, 'startup')
   }
 
   const app = createApp(App)
 
   app.use(pinia)
   app.use(appRouter)
-  app.provide(authDependenciesKey, { login, logout })
+  app.provide(authDependenciesKey, {
+    login,
+    logout,
+    afterAuthenticated: async () => {
+      if (runSync !== null) await syncStore.run(runSync, 'manual')
+    },
+  })
   app.provide(authNavigationKey, {
     openLibrary: async () => { await appRouter.push('/library') },
   })
@@ -147,6 +221,7 @@ export async function bootstrapApp(): Promise<void> {
   if (recordingDependencies !== null) {
     app.provide(recordingDependenciesKey, recordingDependencies)
   }
+  if (syncDependencies !== null) app.provide(syncDependenciesKey, syncDependencies)
   app.provide(importNavigationKey, {
     openPreview: async () => { await appRouter.push('/import/preview') },
     openLibrary: async (scriptId?: string) => {
@@ -157,6 +232,13 @@ export async function bootstrapApp(): Promise<void> {
     openImport: async () => { await appRouter.push('/import') },
     openEditor: async (scriptId: string) => { await appRouter.push(`/scripts/${scriptId}/edit`) },
     openRecording: async (scriptId: string) => { await appRouter.push(`/scripts/${scriptId}/record`) },
+  })
+  app.provide(syncNavigationKey, {
+    openLibrary: async (focusIds) => {
+      await appRouter.push({ path: '/library', query: { focus: [...focusIds].join(',') } })
+    },
+    openConflict: async (conflictId) => { await appRouter.push(`/sync/conflicts/${conflictId}`) },
+    openLogin: async () => { await appRouter.push('/login') },
   })
 
   await appRouter.isReady()

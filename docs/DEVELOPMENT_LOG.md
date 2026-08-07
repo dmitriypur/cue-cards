@@ -154,3 +154,14 @@
 - Final native verification: `env JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ANDROID_HOME=/opt/homebrew/share/android-commandlinetools ./gradlew testDebugUnitTest assembleDebug` completed successfully with 297 actionable tasks (26 executed, 271 up-to-date) and only the two unchanged `flatDir` warnings.
 - Android offline/online smoke passed on AVD `cue_cards_task010_api34` using `system-images;android-34;aosp_atd;arm64-v8a`: `adb install -r apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk` installed the 24 MB debug APK; `adb shell am start -W -n app.cuecards.mobile/.MainActivity` cold-started successfully; `adb shell cmd connectivity airplane-mode enable/disable` preserved PID `2034`. WebView DevTools evidence recorded `navigator.onLine` as `true -> false -> true` and the status text as `Войдите для синхронизации -> Офлайн — изменения сохранены на устройстве -> Войдите для синхронизации`.
 - Task 010 is complete and ready to commit/merge. Task 011 has not started.
+
+## 2026-08-07 — Task 011: structured AI cues, usage accounting, and source preservation (in progress)
+
+- Confirmed Tasks 001–010 from Git merges, completed task checkpoints, and this development log before starting Task 011 on `codex/task-011-ai-cues` from clean `main` at `70a78cf`.
+- Corrected the stale unchecked Task 010 checklist in the detailed plan; its task checkpoint, verification evidence, feature commit, and merge had already established completion.
+- Baseline API verification passed 64 tests with 63 passed, 1 PostgreSQL-only skipped, and 486 assertions; `./vendor/bin/pint --test` passed.
+- Added validated AI request/result objects, a Laravel AI/DeepSeek structured adapter, ownership-safe generation endpoints, database-queue orchestration, deterministic prompt batching, hash/manual-edit guards, safe three-attempt failure handling, per-provider-call usage accounting, and one transactional sync snapshot per completed generation.
+- TDD RED/GREEN covered domain validation, API ownership/entitlements/rate limits, provider adapter mapping, success/failure/batching, prompt byte limits, source preservation, stale hashes, manual cues, usage, and exception sanitization.
+- Final SQLite API verification passed 88 tests with 87 passed, 1 PostgreSQL-only skipped, and 615 assertions; Pint passed. Final PostgreSQL parity passed 88 tests/622 assertions.
+- Mobile regression passed 150 tests in 32 files, strict typecheck, production build, and E2E gate. OpenAPI generation was deterministic at Git object hash `3da42f7bc0e3800e9e997bfd27e5dcba17970e74`.
+- Task 011 is complete. Task 012 was not started.

@@ -8,6 +8,10 @@ import { createAuthGuard } from '@/app/authGuard'
 import { createAppRouter } from '@/app/router'
 import { Login } from '@/application/auth/Login'
 import { Logout } from '@/application/auth/Logout'
+import { RefreshGeneration } from '@/application/ai/RefreshGeneration'
+import { ResumeAiGenerations } from '@/application/ai/ResumeAiGenerations'
+import { StartCardCueGeneration } from '@/application/ai/StartCardCueGeneration'
+import { StartScriptCueGeneration } from '@/application/ai/StartScriptCueGeneration'
 import { ImportWorkflow } from '@/application/import/ImportWorkflow'
 import { ParseSourceDocument } from '@/application/import/ParseSourceDocument'
 import { SaveImportDraft } from '@/application/import/SaveImportDraft'
@@ -32,7 +36,12 @@ import {
   authDependenciesKey,
   authNavigationKey,
 } from '@/features/auth/auth.dependencies'
+import {
+  aiCuesDependenciesKey,
+  type AiCuesDependencies,
+} from '@/features/ai-cues/aiCues.dependencies'
 import { useAuthStore } from '@/features/auth/auth.store'
+import { useAiCuesStore } from '@/features/ai-cues/aiCues.store'
 import {
   editorDependenciesKey,
   type EditorDependencies,
@@ -57,6 +66,7 @@ import {
 } from '@/features/sync/sync.dependencies'
 import { useSyncStore } from '@/features/sync/sync.store'
 import { HttpSyncGateway } from '@/infrastructure/api/HttpSyncGateway'
+import { HttpAiGenerationGateway } from '@/infrastructure/api/HttpAiGenerationGateway'
 import { CapacitorConnectivity } from '@/infrastructure/capacitor/CapacitorConnectivity'
 import { CapacitorSourceFilePicker } from '@/infrastructure/capacitor/CapacitorSourceFilePicker'
 import { SecureTokenStore } from '@/infrastructure/capacitor/SecureTokenStore'
@@ -70,6 +80,7 @@ import { CapacitorSqlDriver } from '@/infrastructure/sqlite/CapacitorSqlDriver'
 import { LocalUnitOfWork } from '@/infrastructure/sqlite/LocalUnitOfWork'
 import { SqliteOutboxRepository } from '@/infrastructure/sqlite/SqliteOutboxRepository'
 import { SqliteConflictRepository } from '@/infrastructure/sqlite/SqliteConflictRepository'
+import { SqliteAiGenerationRequestRepository } from '@/infrastructure/sqlite/SqliteAiGenerationRequestRepository'
 import { SqliteRecordingSessionRepository } from '@/infrastructure/sqlite/SqliteRecordingSessionRepository'
 import { SqliteScriptRepository } from '@/infrastructure/sqlite/SqliteScriptRepository'
 import { SqliteSyncStateRepository } from '@/infrastructure/sqlite/SqliteSyncStateRepository'
@@ -94,8 +105,11 @@ export async function bootstrapApp(): Promise<void> {
   let editorDependencies: EditorDependencies | null = null
   let recordingDependencies: RecordingDependencies | null = null
   let syncDependencies: SyncDependencies | null = null
+  let aiCuesDependencies: AiCuesDependencies | null = null
+  let resumeAiGenerations: ResumeAiGenerations | null = null
   let runSync: RunSync | null = null
   const syncStore = useSyncStore(pinia)
+  const aiCuesStore = useAiCuesStore(pinia)
 
   if (Capacitor.isNativePlatform()) {
     const database = new CapacitorSqlDriver()
@@ -106,6 +120,7 @@ export async function bootstrapApp(): Promise<void> {
     const syncState = new SqliteSyncStateRepository(database)
     const unitOfWork = new LocalUnitOfWork(database)
     const sessions = new SqliteRecordingSessionRepository(database)
+    const aiRequests = new SqliteAiGenerationRequestRepository(database)
     const clock = { now: () => new Date().toISOString() }
     const saveAggregate = new SaveScriptAggregate(
       scripts,
@@ -174,6 +189,41 @@ export async function bootstrapApp(): Promise<void> {
       recordConflict,
     )
     const activeRunSync = runSync
+    const aiGateway = new HttpAiGenerationGateway(api)
+    const startScriptGeneration = new StartScriptCueGeneration(
+      scripts,
+      saveAggregate,
+      connectivity,
+      activeRunSync,
+      aiGateway,
+      aiRequests,
+    )
+    const startCardGeneration = new StartCardCueGeneration(
+      scripts,
+      saveAggregate,
+      connectivity,
+      activeRunSync,
+      aiGateway,
+      aiRequests,
+    )
+    const refreshGeneration = new RefreshGeneration(aiGateway, activeRunSync, aiRequests)
+    resumeAiGenerations = new ResumeAiGenerations(
+      aiRequests,
+      startScriptGeneration,
+      startCardGeneration,
+      refreshGeneration,
+      {
+        accepted: (scopeKey, result) => { aiCuesStore.acceptResumed(scopeKey, result) },
+        updated: (scopeKey, generation) => { aiCuesStore.updateResumed(scopeKey, generation) },
+        failed: (scopeKey, error) => { aiCuesStore.failResumed(scopeKey, error) },
+      },
+    )
+    const activeResumeAiGenerations = resumeAiGenerations
+    aiCuesDependencies = {
+      startScript: startScriptGeneration,
+      startCard: startCardGeneration,
+      refresh: refreshGeneration,
+    }
     syncDependencies = {
       conflicts,
       resolveConflict: new ResolveConflict(
@@ -186,17 +236,21 @@ export async function bootstrapApp(): Promise<void> {
       ),
       runSync: activeRunSync,
     }
+    const syncAndResume = async (reason: 'startup' | 'connectivity'): Promise<void> => {
+      await syncStore.run(activeRunSync, reason)
+      if (syncStore.state === 'up-to-date') await activeResumeAiGenerations.execute()
+    }
     connectivity.subscribe((online) => {
       if (!online) {
         syncStore.state = 'offline'
         return
       }
-      void syncStore.run(activeRunSync, 'connectivity')
+      void syncAndResume('connectivity')
     })
     registerAppStateListener((isActive) => {
-      if (isActive) void syncStore.run(activeRunSync, 'connectivity')
+      if (isActive) void syncAndResume('connectivity')
     })
-    void syncStore.run(activeRunSync, 'startup')
+    void syncAndResume('startup')
   }
 
   const app = createApp(App)
@@ -207,7 +261,10 @@ export async function bootstrapApp(): Promise<void> {
     login,
     logout,
     afterAuthenticated: async () => {
-      if (runSync !== null) await syncStore.run(runSync, 'manual')
+      if (runSync !== null) {
+        await syncStore.run(runSync, 'manual')
+        if (syncStore.state === 'up-to-date') await resumeAiGenerations?.execute()
+      }
     },
   })
   app.provide(authNavigationKey, {
@@ -222,6 +279,7 @@ export async function bootstrapApp(): Promise<void> {
     app.provide(recordingDependenciesKey, recordingDependencies)
   }
   if (syncDependencies !== null) app.provide(syncDependenciesKey, syncDependencies)
+  if (aiCuesDependencies !== null) app.provide(aiCuesDependenciesKey, aiCuesDependencies)
   app.provide(importNavigationKey, {
     openPreview: async () => { await appRouter.push('/import/preview') },
     openLibrary: async (scriptId?: string) => {

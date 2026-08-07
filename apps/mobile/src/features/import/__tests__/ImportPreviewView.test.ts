@@ -1,10 +1,16 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import ImportPreviewView from '@/features/import/ImportPreviewView.vue'
 import { useImportStore } from '@/features/import/import.store'
 import type { ImportDraft } from '@/domain/import/types'
+import { ImportWorkflow } from '@/application/import/ImportWorkflow'
+import { aiCuesDependenciesKey } from '@/features/ai-cues/aiCues.dependencies'
+import {
+  importNavigationKey,
+  importWorkflowKey,
+} from '@/features/import/import.dependencies'
 
 const draft: ImportDraft = {
   title: 'Сценарий',
@@ -61,7 +67,8 @@ describe('ImportPreviewView', () => {
     expect(wrapper.text()).toContain('Пустой блок нужно исправить.')
     expect(wrapper.get('[data-issue-severity="warning"]').classes()).toContain('text-surface-foreground')
     expect(wrapper.get('[data-issue-severity="error"]').classes()).toContain('text-surface-foreground')
-    expect(buttonByName(wrapper, 'Сохранить').attributes('disabled')).toBeDefined()
+    expect(buttonByName(wrapper, 'Сохранить и создать тезисы').attributes('disabled')).toBeDefined()
+    expect(buttonByName(wrapper, 'Сохранить без ИИ').attributes('disabled')).toBeDefined()
   })
 
   it('splits a block at the textarea cursor', async () => {
@@ -95,5 +102,76 @@ describe('ImportPreviewView', () => {
     await buttonByName(wrapper, 'Вверх').trigger('click')
 
     expect(store.draft?.blocks.map(({ id }) => id)).toEqual(['b', 'a'])
+  })
+
+  it('saves locally before requesting AI cues and then opens the saved script', async () => {
+    const events: string[] = []
+    const pinia = createPinia()
+    const store = useImportStore(pinia)
+    store.setDraft({ ...draft, issues: [], blocks: draft.blocks.slice(0, 2) })
+    const workflow = new ImportWorkflow(
+      { pick: async () => null },
+      { execute: async () => draft },
+      { execute: async () => { events.push('save-local'); return 'script-created' } },
+    )
+    const wrapper = mount(ImportPreviewView, {
+      global: {
+        plugins: [pinia],
+        provide: {
+          [importWorkflowKey as symbol]: workflow,
+          [importNavigationKey as symbol]: {
+            openPreview: async () => undefined,
+            openLibrary: async (scriptId?: string) => { events.push(`open:${scriptId ?? ''}`) },
+          },
+          [aiCuesDependenciesKey as symbol]: {
+            startScript: {
+              execute: async (scriptId: string) => {
+                events.push(`start-ai:${scriptId}`)
+                return { state: 'waiting-for-network' as const, generation: null }
+              },
+            },
+            startCard: { execute: async () => { throw new Error('unexpected card generation') } },
+            refresh: {
+              execute: async () => { throw new Error('unexpected refresh') },
+              track: () => () => undefined,
+            },
+          },
+        },
+      },
+    })
+
+    await buttonByName(wrapper, 'Сохранить и создать тезисы').trigger('click')
+    await flushPromises()
+
+    expect(events).toEqual(['save-local', 'start-ai:script-created', 'open:script-created'])
+  })
+
+  it('can save locally without starting AI', async () => {
+    const events: string[] = []
+    const pinia = createPinia()
+    const store = useImportStore(pinia)
+    store.setDraft({ ...draft, issues: [], blocks: draft.blocks.slice(0, 2) })
+    const workflow = new ImportWorkflow(
+      { pick: async () => null },
+      { execute: async () => draft },
+      { execute: async () => { events.push('save-local'); return 'script-created' } },
+    )
+    const wrapper = mount(ImportPreviewView, {
+      global: {
+        plugins: [pinia],
+        provide: {
+          [importWorkflowKey as symbol]: workflow,
+          [importNavigationKey as symbol]: {
+            openPreview: async () => undefined,
+            openLibrary: async () => { events.push('open') },
+          },
+        },
+      },
+    })
+
+    await buttonByName(wrapper, 'Сохранить без ИИ').trigger('click')
+    await flushPromises()
+
+    expect(events).toEqual(['save-local', 'open'])
   })
 })

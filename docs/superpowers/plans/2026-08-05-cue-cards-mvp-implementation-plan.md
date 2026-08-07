@@ -656,18 +656,18 @@ public function schema(JsonSchema $schema): array
 - Produces `RefreshGeneration.execute(generationId: string): Promise<AiGeneration>` and invokes sync when the server reaches a terminal state.
 - Consumes generated OpenAPI types, `RunSync`, local repositories, and connectivity; components never poll HTTP directly.
 
-- [ ] Write generation action tests first: offline requests become locally pending, online requests sync first, a server generation is tracked by ID, completion triggers sync, stale results remain stale, and auth failure keeps the full script usable.
-- [ ] Run `npm run test:unit -- GenerationActions`; expected failure: AI gateway/actions are absent.
-- [ ] Implement the gateway and actions with one active poll per generation, 2/5/10-second intervals, cancellation on route disposal, and a manual Refresh action.
-- [ ] Use local cue statuses as the UI source of truth; server generation status augments progress but cannot replace locally edited cues.
-- [ ] Write `GenerationProgress.test.ts` first for `pending`, `generating 2/5`, `ready`, `stale`, `failed`, offline waiting, retry, and superadmin unrestricted messaging without a quota counter.
-- [ ] Run the focused component test; expected failure: progress components are absent.
-- [ ] Implement progress and regenerate controls. Require explicit confirmation before regenerating manually edited cues and preserve the previous cues until a valid replacement arrives.
-- [ ] Add import actions `Сохранить и создать тезисы` and `Сохранить без ИИ`; the first must save locally before attempting sync/generation.
-- [ ] Add whole-script generation to the editor and single-card regeneration beside each cue editor; expose errors as safe localized messages with Retry.
-- [ ] Add a recording fallback: cards without ready cues default to full-text mode, while the user can still choose stale/manual cues explicitly.
-- [ ] Run AI/mobile tests, all mobile tests, typecheck, production build, contract drift, and Android debug build.
-- [ ] Update the development log and commit: `feat(mobile): add AI cue generation workflow`.
+- [x] Write generation action tests first: offline requests become locally pending, online requests sync first, a server generation is tracked by ID, completion triggers sync, stale results remain stale, and auth failure keeps the full script usable.
+- [x] Run `npm run test:unit -- GenerationActions`; expected failure: AI gateway/actions are absent.
+- [x] Implement the gateway and actions with one active poll per generation, 2/5/10-second intervals, cancellation on route disposal, and a manual Refresh action.
+- [x] Use local cue statuses as the UI source of truth; server generation status augments progress but cannot replace locally edited cues.
+- [x] Write `GenerationProgress.test.ts` first for `pending`, `generating 2/5`, `ready`, `stale`, `failed`, offline waiting, retry, and superadmin unrestricted messaging without a quota counter.
+- [x] Run the focused component test; expected failure: progress components are absent.
+- [x] Implement progress and regenerate controls. Require explicit confirmation before regenerating manually edited cues and preserve the previous cues until a valid replacement arrives.
+- [x] Add import actions `Сохранить и создать тезисы` and `Сохранить без ИИ`; the first must save locally before attempting sync/generation.
+- [x] Add whole-script generation to the editor and single-card regeneration beside each cue editor; expose errors as safe localized messages with Retry.
+- [x] Add a recording fallback: cards without ready cues default to full-text mode, while the user can still choose stale/manual cues explicitly.
+- [x] Run AI/mobile tests, all mobile tests, typecheck, production build, contract drift, and Android debug build.
+- [x] Update the development log and commit: `feat(mobile): add AI cue generation workflow`.
 
 ## Task 13: Add end-to-end, accessibility, privacy, and failure-path hardening
 

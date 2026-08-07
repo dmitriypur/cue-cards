@@ -56,6 +56,7 @@ export class UpdateCues {
         sourceHash: current.contentHash,
         status: 'ready',
         manuallyEdited: true,
+        version: current.cueSet.version + 1,
         updatedAt,
       },
       updatedAt,

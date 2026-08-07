@@ -65,6 +65,85 @@ class AiGenerationApiTest extends TestCase
             ->assertJsonPath('data.status', 'queued');
     }
 
+    public function test_script_generation_excludes_manual_cues_without_changing_them(): void
+    {
+        Queue::fake();
+        [$user, $script, $cards] = $this->scriptWithCards(Role::Superadmin);
+        $manual = $cards[0]->cueSet;
+        $manual->update([
+            'cues' => ['Ручной один', 'Ручной два', 'Ручной три'],
+            'source_hash' => $cards[0]->content_hash,
+            'status' => 'ready',
+            'manually_edited' => true,
+        ]);
+        Sanctum::actingAs($user);
+
+        $this->postJson("/api/v1/scripts/{$script->id}/cue-generations")
+            ->assertAccepted()
+            ->assertJsonPath('data.total_cards', 1);
+
+        $this->assertDatabaseHas('cue_sets', [
+            'card_id' => $cards[0]->id,
+            'status' => 'ready',
+            'manually_edited' => true,
+            'generation_id' => null,
+        ]);
+    }
+
+    public function test_manual_card_requires_and_records_explicit_replacement_authorization(): void
+    {
+        Queue::fake();
+        [$user, $script, $cards] = $this->scriptWithCards(Role::Superadmin);
+        $manual = $cards[0]->cueSet;
+        $manual->update([
+            'cues' => ['Ручной один', 'Ручной два', 'Ручной три'],
+            'source_hash' => $cards[0]->content_hash,
+            'status' => 'ready',
+            'manually_edited' => true,
+        ]);
+        Sanctum::actingAs($user);
+
+        $this->postJson("/api/v1/cards/{$cards[0]->id}/cue-generations", [
+            'replace_manual' => false,
+        ])->assertConflict()
+            ->assertJsonPath('error.code', 'AI_MANUAL_CUES_CONFIRMATION_REQUIRED');
+
+        $generationId = $this->postJson("/api/v1/cards/{$cards[0]->id}/cue-generations", [
+            'replace_manual' => true,
+        ])->assertAccepted()->json('data.id');
+
+        $this->assertDatabaseHas('cue_sets', [
+            'card_id' => $cards[0]->id,
+            'manually_edited' => true,
+            'status' => 'pending',
+            'generation_id' => $generationId,
+        ]);
+        $this->assertDatabaseHas('ai_generations', [
+            'id' => $generationId,
+            'replace_manual' => true,
+        ]);
+        $this->assertSame($script->id, $cards[0]->script_id);
+    }
+
+    public function test_replaying_the_same_operation_returns_one_generation_and_dispatches_one_job(): void
+    {
+        Queue::fake();
+        [$user, $script] = $this->scriptWithCards(Role::Superadmin);
+        Sanctum::actingAs($user);
+        $operationId = '019b9ccb-3f71-7000-8000-000000000599';
+
+        $first = $this->postJson("/api/v1/scripts/{$script->id}/cue-generations", [
+            'operation_id' => $operationId,
+        ])->assertAccepted()->json('data.id');
+        $second = $this->postJson("/api/v1/scripts/{$script->id}/cue-generations", [
+            'operation_id' => $operationId,
+        ])->assertAccepted()->json('data.id');
+
+        $this->assertSame($first, $second);
+        $this->assertDatabaseCount('ai_generations', 1);
+        Queue::assertPushed(GenerateScriptCues::class, 1);
+    }
+
     public function test_another_users_script_and_generation_are_hidden(): void
     {
         Queue::fake();

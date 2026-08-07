@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Application\AiAssistance\CompleteCueGeneration;
 use App\Application\AiAssistance\CueGenerator;
+use App\Application\AiAssistance\FailCueGeneration;
 use App\Application\Usage\RecordAiUsage;
 use App\Domain\AiAssistance\CueGenerationRequest;
 use App\Domain\AiAssistance\CueGenerationResult;
@@ -96,16 +97,7 @@ class GenerateScriptCues implements ShouldQueue
             return;
         }
 
-        $generation->update([
-            'status' => GenerationStatus::Failed,
-            'error_code' => 'AI_PROVIDER_ERROR',
-            'error_message' => 'Не удалось создать тезисы. Повторите попытку.',
-            'completed_at' => now(),
-        ]);
-        Card::query()->whereIn('id', array_keys($generation->source_hashes))
-            ->each(function (Card $card) use ($generation): void {
-                $card->cueSet()->where('generation_id', $generation->id)->update(['status' => 'failed']);
-            });
+        app(FailCueGeneration::class)->handle($generation);
     }
 
     /** @return list<int> */

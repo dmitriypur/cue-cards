@@ -222,4 +222,66 @@ describe('recording session actions', () => {
       .rejects.toThrow('local write failed')
     expect(context.wakeLock.releases).toBe(1)
   })
+
+  it('keeps the selected cue preference for a non-ready starting card', async () => {
+    const context = harness()
+    const staleScript: ScriptAggregate = {
+      ...script,
+      cards: script.cards.map((item) => item.id === 'card-b'
+        ? {
+            ...item,
+            cueSet: {
+              ...item.cueSet,
+              status: 'stale',
+              manuallyEdited: true,
+              sourceHash: 'old-hash',
+            },
+          }
+        : item),
+    }
+    context.scripts.get = async () => staleScript
+    const start = new StartRecording(
+      context.scripts,
+      context.sessions,
+      context.wakeLock,
+      { now: () => startedAt },
+    )
+
+    const defaulted = await start.execute({
+      scriptId: script.id,
+      cardId: 'card-b',
+      mode: 'cues',
+      fontScale: 1,
+    })
+    expect(defaulted.mode).toBe('cues')
+  })
+
+  it('keeps the global cue preference when navigation reaches a non-ready card', async () => {
+    const context = harness()
+    const pendingScript: ScriptAggregate = {
+      ...script,
+      cards: script.cards.map((item) => item.id === 'card-b'
+        ? { ...item, cueSet: { ...item.cueSet, cues: [], status: 'pending' } }
+        : item),
+    }
+    context.scripts.get = async () => pendingScript
+    context.sessions.current = {
+      scriptId: script.id,
+      currentCardId: 'card-a',
+      mode: 'cues',
+      fontScale: 1,
+      updatedAt: startedAt,
+    }
+    const move = new MoveRecordingCursor(
+      context.scripts,
+      context.sessions,
+      context.wakeLock,
+      { now: () => movedAt },
+    )
+
+    const result = await move.execute({ sessionId: script.id, direction: 'next' })
+
+    expect(result.currentCardId).toBe('card-b')
+    expect(result.mode).toBe('cues')
+  })
 })

@@ -10,10 +10,21 @@ class StartCardCueGeneration
 {
     public function __construct(private readonly CreateCueGeneration $create) {}
 
-    public function handle(User $user, Card $card): AiGeneration
-    {
+    public function handle(
+        User $user,
+        Card $card,
+        bool $replaceManual = false,
+        ?string $operationId = null,
+    ): AiGeneration {
         $card->loadMissing(['script', 'cueSet']);
 
-        return $this->create->handle($user, $card->script, collect([$card]), $card);
+        return $this->create->handle(
+            $user,
+            $card->script,
+            collect([$card]),
+            $card,
+            $replaceManual,
+            $operationId,
+        );
     }
 }

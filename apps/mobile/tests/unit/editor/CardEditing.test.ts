@@ -233,6 +233,7 @@ describe('card editing actions', () => {
         sourceHash: 'hash-a',
         status: 'ready',
         manuallyEdited: true,
+        version: 2,
         updatedAt: now,
       },
     })

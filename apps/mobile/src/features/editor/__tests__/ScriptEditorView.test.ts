@@ -3,6 +3,8 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ScriptAggregate } from '@/domain/scripts/types'
+import type { AiGeneration } from '@/application/ports/AiGenerationGateway'
+import { aiCuesDependenciesKey } from '@/features/ai-cues/aiCues.dependencies'
 import {
   editorDependenciesKey,
   type EditorDependencies,
@@ -57,7 +59,7 @@ const aggregate: ScriptAggregate = {
         sourceHash: 'old-hash',
         status: 'stale',
         generationId: 'generation-b',
-        manuallyEdited: false,
+        manuallyEdited: true,
         version: 1,
         createdAt: '2026-08-06T08:00:00.000Z',
         updatedAt: '2026-08-06T08:00:00.000Z',
@@ -88,6 +90,7 @@ function updatedCard(input: {
 }
 
 function mountEditor() {
+  const getScript = vi.fn().mockResolvedValue(aggregate)
   const updateCard = vi.fn().mockImplementation(async (input) => updatedCard(input))
   const reorderCards = vi.fn().mockImplementation(async ({ orderedCardIds }) => ({
     ...aggregate,
@@ -106,9 +109,29 @@ function mountEditor() {
       ? { ...card, cueSet: { ...card.cueSet, cues, manuallyEdited: true } }
       : card),
   }))
+  const generation: AiGeneration = {
+    id: 'generation-new',
+    scriptId: aggregate.id,
+    cardId: null,
+    status: 'queued',
+    completedCards: 0,
+    totalCards: aggregate.cards.length,
+    error: null,
+    createdAt: '2026-08-07T12:00:00.000Z',
+    updatedAt: '2026-08-07T12:00:00.000Z',
+  }
+  const startScriptGeneration = vi.fn().mockResolvedValue({
+    state: 'tracking',
+    generation,
+  })
+  const startCardGeneration = vi.fn().mockImplementation(async ({ cardId }) => ({
+    state: 'tracking',
+    generation: { ...generation, cardId, totalCards: 1 },
+  }))
+  let generationListener: ((generation: AiGeneration) => void) | null = null
   let backgroundListener: (() => void) | null = null
   const dependencies: EditorDependencies = {
-    getScript: { execute: vi.fn().mockResolvedValue(aggregate) },
+    getScript: { execute: getScript },
     updateCard: { execute: updateCard },
     reorderCards: { execute: reorderCards },
     splitCard: { execute: splitCard },
@@ -124,7 +147,20 @@ function mountEditor() {
     props: { scriptId: aggregate.id },
     global: {
       plugins: [createPinia()],
-      provide: { [editorDependenciesKey as symbol]: dependencies },
+      provide: {
+        [editorDependenciesKey as symbol]: dependencies,
+        [aiCuesDependenciesKey as symbol]: {
+          startScript: { execute: startScriptGeneration },
+          startCard: { execute: startCardGeneration },
+          refresh: {
+            execute: vi.fn().mockResolvedValue(generation),
+            track: vi.fn().mockImplementation((_generationId, listener) => {
+              generationListener = listener
+              return () => { generationListener = null }
+            }),
+          },
+        },
+      },
     },
   })
 
@@ -135,6 +171,11 @@ function mountEditor() {
     splitCard,
     mergeCards,
     updateCues,
+    startScriptGeneration,
+    startCardGeneration,
+    generation,
+    getScript,
+    publishGeneration: (value: AiGeneration) => generationListener?.(value),
     background: () => backgroundListener?.(),
   }
 }
@@ -255,5 +296,55 @@ describe('ScriptEditorView', () => {
     await flushPromises()
     expect(updateCard).toHaveBeenCalledTimes(2)
     expect(updateCard).toHaveBeenLastCalledWith(expect.objectContaining({ cardId: 'card-b' }))
+  })
+
+  it('starts whole-script generation and confirms replacement of manual card cues', async () => {
+    const {
+      wrapper,
+      startScriptGeneration,
+      startCardGeneration,
+      getScript,
+      publishGeneration,
+      generation,
+    } = mountEditor()
+    await flushPromises()
+
+    await wrapper.get('[data-action="generate-script-cues"]').trigger('click')
+    await flushPromises()
+    expect(startScriptGeneration).toHaveBeenCalledWith(aggregate.id)
+    expect(getScript).toHaveBeenCalledTimes(2)
+
+    publishGeneration({ ...generation, status: 'completed', completedCards: 2 })
+    await flushPromises()
+    expect(getScript).toHaveBeenCalledTimes(3)
+
+    await wrapper.get('[data-card-id="card-b"] [data-action="regenerate-card"]').trigger('click')
+    expect(startCardGeneration).not.toHaveBeenCalled()
+    expect(wrapper.get('[role="dialog"]').text()).toContain('Заменить ручные тезисы')
+
+    await wrapper.get('[role="dialog"] [data-action="confirm"]').trigger('click')
+    await flushPromises()
+    expect(startCardGeneration).toHaveBeenCalledWith({
+      scriptId: aggregate.id,
+      cardId: 'card-b',
+      replaceManual: true,
+    })
+  })
+
+  it('shows a safe generation error inside the affected card', async () => {
+    const { wrapper, startCardGeneration } = mountEditor()
+    await flushPromises()
+    startCardGeneration.mockRejectedValueOnce(
+      new Error('sensitive transport detail'),
+    )
+
+    await wrapper.get('[data-card-id="card-a"] [data-action="regenerate-card"]').trigger('click')
+    await flushPromises()
+
+    const firstCard = wrapper.get('[data-card-id="card-a"]')
+    expect(firstCard.get('[data-generation-error]').text()).toContain(
+      'Не удалось обновить тезисы. Полный текст и прежние тезисы сохранены.',
+    )
+    expect(firstCard.text()).not.toContain('sensitive transport detail')
   })
 })

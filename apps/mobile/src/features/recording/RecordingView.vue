@@ -68,7 +68,8 @@ function toggleMode(): void {
     <div v-else-if="currentCard !== null">
       <FocusCard
         :card="currentCard"
-        :mode="store.session.mode"
+        :mode="store.effectiveMode"
+        :can-show-cues="store.canChooseCues"
         :font-scale="store.session.fontScale"
         :index="currentIndex"
         :total="cards.length"

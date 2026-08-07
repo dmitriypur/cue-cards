@@ -13,6 +13,7 @@ import type {
 } from '@/infrastructure/sqlite/SqlDriver'
 import { migrateInitialSchema } from '@/infrastructure/sqlite/migrations/001_initial'
 import { migrateSyncConflicts } from '@/infrastructure/sqlite/migrations/002_sync_conflicts'
+import { migrateAiGenerationRequests } from '@/infrastructure/sqlite/migrations/003_ai_generation_requests'
 import { SerializedTransactionQueue } from '@/infrastructure/sqlite/SerializedTransactionQueue'
 
 const databaseName = 'cue_cards'
@@ -31,6 +32,7 @@ export class CapacitorSqlDriver implements SqlDriver {
     await this.database.open()
     await migrateInitialSchema(this)
     await migrateSyncConflicts(this)
+    await migrateAiGenerationRequests(this)
   }
 
   public async execute(statements: string): Promise<void> {

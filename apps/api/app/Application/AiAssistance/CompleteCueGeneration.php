@@ -31,12 +31,16 @@ class CompleteCueGeneration
                     continue;
                 }
 
+                $authorizedManualReplacement = $generation->replace_manual
+                    && $generation->card_id === $card->id
+                    && (int) ($generation->source_cue_versions[$card->id] ?? -1) === $cueSet->version;
                 $accepted = hash_equals($card->content_hash, $generated->sourceHash)
-                    && ! $cueSet->manually_edited;
+                    && (! $cueSet->manually_edited || $authorizedManualReplacement);
                 $cueSet->update($accepted ? [
                     'cues' => $generated->cues,
                     'source_hash' => $generated->sourceHash,
                     'status' => 'ready',
+                    'manually_edited' => false,
                     'version' => $cueSet->version + 1,
                 ] : [
                     'status' => 'stale',

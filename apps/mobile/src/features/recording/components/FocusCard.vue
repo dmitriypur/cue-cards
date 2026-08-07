@@ -8,6 +8,7 @@ import { useHorizontalSwipe } from '@/features/recording/composables/useHorizont
 const props = defineProps<{
   readonly card: ScriptCard
   readonly mode: RecordingMode
+  readonly canShowCues: boolean
   readonly fontScale: number
   readonly index: number
   readonly total: number
@@ -54,7 +55,8 @@ watch(() => [props.card.id, props.mode], restoreScroll)
         type="button"
         :aria-pressed="mode === 'cues'"
         aria-label="Показать тезисы"
-        class="min-h-12 rounded-lg px-4 aria-pressed:bg-surface"
+        :disabled="!canShowCues"
+        class="min-h-12 rounded-lg px-4 aria-pressed:bg-surface disabled:opacity-40"
         @click="mode !== 'cues' && emit('toggleMode')"
       >
         Тезисы
@@ -98,7 +100,8 @@ watch(() => [props.card.id, props.mode], restoreScroll)
       <button
         type="button"
         :aria-label="mode === 'cues' ? 'Показать полный текст' : 'Показать тезисы'"
-        class="min-h-12 min-w-12 rounded-lg bg-primary px-4 text-primary-foreground"
+        class="min-h-12 min-w-12 rounded-lg bg-primary px-4 text-primary-foreground disabled:opacity-40"
+        :disabled="mode === 'full' && !canShowCues"
         @click="emit('toggleMode')"
       >
         {{ mode === 'cues' ? 'Текст' : 'Тезисы' }}

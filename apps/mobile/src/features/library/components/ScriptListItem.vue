@@ -4,7 +4,10 @@ import { computed } from 'vue'
 import type { ScriptSummary } from '@/domain/scripts/types'
 import SyncBadge from '@/features/library/components/SyncBadge.vue'
 
-const props = defineProps<{ readonly script: ScriptSummary }>()
+const props = withDefaults(defineProps<{
+  readonly script: ScriptSummary
+  readonly focused?: boolean
+}>(), { focused: false })
 const emit = defineEmits<{
   delete: [scriptId: string]
   edit: [scriptId: string]
@@ -24,7 +27,9 @@ const cueLabel = computed(() => ({
 <template>
   <article
     :data-script-id="script.id"
+    :data-focused="focused"
     class="rounded-xl border bg-surface p-4 text-surface-foreground shadow-sm"
+    :class="focused ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''"
   >
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>

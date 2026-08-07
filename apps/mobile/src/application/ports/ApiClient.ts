@@ -15,6 +15,7 @@ export class ApiError extends Error {
   public readonly code: string
   public readonly correlationId: string
   public readonly fields?: Readonly<Record<string, readonly string[]>>
+  public readonly details?: unknown
 
   public constructor(
     status: number,
@@ -22,6 +23,7 @@ export class ApiError extends Error {
     message: string,
     correlationId: string,
     fields?: Readonly<Record<string, readonly string[]>>,
+    details?: unknown,
   ) {
     super(message)
     this.name = 'ApiError'
@@ -29,6 +31,7 @@ export class ApiError extends Error {
     this.code = code
     this.correlationId = correlationId
     if (fields !== undefined) this.fields = fields
+    if (details !== undefined) this.details = details
   }
 
   public toJSON(): Readonly<Record<string, unknown>> {

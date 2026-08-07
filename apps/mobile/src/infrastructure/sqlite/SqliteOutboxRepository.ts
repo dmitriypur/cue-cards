@@ -66,16 +66,51 @@ export class SqliteOutboxRepository implements OutboxRepository {
     )
   }
 
-  public async next(): Promise<StoredOutboxCommand | null> {
+  public async next(includeDeferred = false): Promise<StoredOutboxCommand | null> {
     const [row] = await this.driver.query<OutboxRow>(
-      `SELECT * FROM outbox_commands
-       WHERE state = 'pending'
-         AND (next_attempt_at IS NULL OR next_attempt_at <= strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
-       ORDER BY created_at, operation_id
-       LIMIT 1`,
+      `SELECT * FROM (
+         SELECT * FROM outbox_commands
+         WHERE state = 'pending'
+         ORDER BY created_at, operation_id
+         LIMIT 1
+       ) AS fifo_head
+       ${includeDeferred
+         ? ''
+         : "WHERE next_attempt_at IS NULL OR next_attempt_at <= strftime('%Y-%m-%dT%H:%M:%fZ', 'now')"}`,
     )
 
     return row === undefined ? null : this.mapRow(row)
+  }
+
+  public async nextRetryAt(): Promise<string | null> {
+    const [row] = await this.driver.query<SqlRow & { next_attempt_at: string | null }>(
+      `SELECT MIN(next_attempt_at) AS next_attempt_at
+       FROM outbox_commands
+       WHERE state = 'pending' AND next_attempt_at IS NOT NULL`,
+    )
+    return row?.next_attempt_at ?? null
+  }
+
+  public async find(operationId: UUID): Promise<StoredOutboxCommand | null> {
+    const [row] = await this.driver.query<OutboxRow>(
+      'SELECT * FROM outbox_commands WHERE operation_id = ? LIMIT 1',
+      [operationId],
+    )
+    return row === undefined ? null : this.mapRow(row)
+  }
+
+  public async hasForAggregate(aggregateId: UUID, tx?: SqlTransaction): Promise<boolean> {
+    const [row] = await (tx ?? this.driver).query<SqlRow>(
+      'SELECT operation_id FROM outbox_commands WHERE aggregate_id = ? LIMIT 1',
+      [aggregateId],
+    )
+    return row !== undefined
+  }
+
+  public async recoverInterrupted(): Promise<void> {
+    await this.driver.run(
+      "UPDATE outbox_commands SET state = 'pending', next_attempt_at = NULL WHERE state = 'in_flight'",
+    )
   }
 
   public async markInFlight(operationId: UUID): Promise<void> {
@@ -84,6 +119,30 @@ export class SqliteOutboxRepository implements OutboxRepository {
        SET state = 'in_flight', attempts = attempts + 1
        WHERE operation_id = ?`,
       [operationId],
+    )
+  }
+
+  public async release(operationId: UUID): Promise<void> {
+    await this.driver.run(
+      `UPDATE outbox_commands SET state = 'pending', next_attempt_at = NULL
+       WHERE operation_id = ?`,
+      [operationId],
+    )
+  }
+
+  public async scheduleRetry(operationId: UUID, nextAttemptAt: string): Promise<void> {
+    await this.driver.run(
+      `UPDATE outbox_commands
+       SET state = 'pending', next_attempt_at = ?
+       WHERE operation_id = ?`,
+      [nextAttemptAt, operationId],
+    )
+  }
+
+  public async removeForAggregate(aggregateId: UUID, tx?: SqlTransaction): Promise<void> {
+    await (tx ?? this.driver).run(
+      'DELETE FROM outbox_commands WHERE aggregate_id = ?',
+      [aggregateId],
     )
   }
 
@@ -119,8 +178,12 @@ export class SqliteOutboxRepository implements OutboxRepository {
     })
   }
 
-  public async rebasePending(aggregateId: UUID, serverVersion: number): Promise<void> {
-    await this.driver.run(
+  public async rebasePending(
+    aggregateId: UUID,
+    serverVersion: number,
+    tx?: SqlTransaction,
+  ): Promise<void> {
+    await (tx ?? this.driver).run(
       `UPDATE outbox_commands SET base_version = ?
        WHERE aggregate_id = ? AND state = 'pending'`,
       [serverVersion, aggregateId],

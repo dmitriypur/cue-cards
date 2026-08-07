@@ -109,8 +109,9 @@ export class SqliteScriptRepository implements ScriptRepository {
     }))
   }
 
-  public async get(id: UUID): Promise<ScriptAggregate | null> {
-    const [script] = await this.driver.query<ScriptRow>(
+  public async get(id: UUID, tx?: SqlTransaction): Promise<ScriptAggregate | null> {
+    const executor = tx ?? this.driver
+    const [script] = await executor.query<ScriptRow>(
       'SELECT * FROM scripts WHERE id = ? LIMIT 1',
       [id],
     )
@@ -119,11 +120,11 @@ export class SqliteScriptRepository implements ScriptRepository {
       return null
     }
 
-    const cardRows = await this.driver.query<CardRow>(
+    const cardRows = await executor.query<CardRow>(
       'SELECT * FROM cards WHERE script_id = ? ORDER BY position',
       [id],
     )
-    const cueRows = await this.driver.query<CueSetRow>(
+    const cueRows = await executor.query<CueSetRow>(
       `SELECT cue_sets.* FROM cue_sets
        INNER JOIN cards ON cards.id = cue_sets.card_id
        WHERE cards.script_id = ?`,
@@ -247,6 +248,10 @@ export class SqliteScriptRepository implements ScriptRepository {
   }
 
   private async insertCueSet(executor: SqlExecutor, cueSet: CueSet): Promise<void> {
+    await executor.run(
+      'DELETE FROM cue_sets WHERE card_id = ? AND id <> ?',
+      [cueSet.cardId, cueSet.id],
+    )
     await executor.run(
       `INSERT INTO cue_sets (
         id, card_id, cues, source_hash, status, generation_id, manually_edited,

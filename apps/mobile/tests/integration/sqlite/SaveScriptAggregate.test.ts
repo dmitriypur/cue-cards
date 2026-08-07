@@ -123,14 +123,44 @@ describe('SaveScriptAggregate', () => {
     expect(JSON.parse(String(outbox[0]?.payload))).toEqual(aggregate)
   })
 
-  it('rolls back the aggregate when the outbox insert fails', async () => {
-    driver.failNextStatementContaining('INSERT INTO outbox_commands')
+  it('notifies synchronization only after the local transaction commits', async () => {
+    const committedSnapshots: ScriptAggregate[] = []
+    const action = new SaveScriptAggregate(
+      new SqliteScriptRepository(driver),
+      new SqliteOutboxRepository(driver),
+      new LocalUnitOfWork(driver),
+      { now: () => '2026-08-06T06:06:00.000Z' },
+      () => '019b9ccb-3f71-7000-8000-000000000099',
+      async (saved) => {
+        const persisted = await new SqliteScriptRepository(driver).get(saved.id)
+        const queued = await new SqliteOutboxRepository(driver).next()
+        if (persisted !== null && queued !== null) committedSnapshots.push(persisted)
+      },
+    )
 
-    await expect(makeAction().execute({ aggregate })).rejects.toThrow('Injected SQL failure')
+    await action.execute({ aggregate })
+
+    expect(committedSnapshots).toEqual([aggregate])
+  })
+
+  it('rolls back the aggregate when the outbox insert fails', async () => {
+    let notified = false
+    driver.failNextStatementContaining('INSERT INTO outbox_commands')
+    const action = new SaveScriptAggregate(
+      new SqliteScriptRepository(driver),
+      new SqliteOutboxRepository(driver),
+      new LocalUnitOfWork(driver),
+      { now: () => '2026-08-06T06:06:00.000Z' },
+      () => '019b9ccb-3f71-7000-8000-000000000099',
+      () => { notified = true },
+    )
+
+    await expect(action.execute({ aggregate })).rejects.toThrow('Injected SQL failure')
 
     await expect(driver.query('SELECT * FROM scripts')).resolves.toEqual([])
     await expect(driver.query('SELECT * FROM cards')).resolves.toEqual([])
     await expect(driver.query('SELECT * FROM cue_sets')).resolves.toEqual([])
+    expect(notified).toBe(false)
   })
 
   it('coalesces a newer snapshot into the pending command without rebasing it', async () => {
@@ -173,6 +203,124 @@ describe('SaveScriptAggregate', () => {
       ['019b9ccb-3f71-7000-8000-000000000099', 'in_flight'],
       ['019b9ccb-3f71-7000-8000-000000000100', 'pending'],
     ])
+  })
+
+  it('serializes a local save transaction with a concurrent acknowledgement', async () => {
+    await makeAction().execute({ aggregate })
+    const scripts = new SqliteScriptRepository(driver)
+    const outbox = new SqliteOutboxRepository(driver)
+    const unitOfWork = new LocalUnitOfWork(driver)
+    await outbox.markInFlight('019b9ccb-3f71-7000-8000-000000000099')
+    let entered!: () => void
+    const transactionEntered = new Promise<void>((resolve) => { entered = resolve })
+    let release!: () => void
+    const holdTransaction = new Promise<void>((resolve) => { release = resolve })
+    const successor = { ...aggregate, title: 'Локальная версия во время ответа' }
+    const localSave = unitOfWork.run(async (tx) => {
+      await scripts.save(successor, tx)
+      entered()
+      await holdTransaction
+      await outbox.upsertLatestSnapshot({
+        operationId: '019b9ccb-3f71-7000-8000-000000000100',
+        aggregateId: aggregate.id,
+        baseVersion: aggregate.serverVersion,
+        type: 'script.replace',
+        payload: successor,
+        createdAt: '2026-08-06T06:07:00.000Z',
+      }, tx)
+    })
+    await transactionEntered
+
+    const acknowledgement = outbox.acknowledge(
+      '019b9ccb-3f71-7000-8000-000000000099',
+      5,
+    )
+    release()
+
+    await expect(Promise.all([localSave, acknowledgement])).resolves.toEqual([undefined, undefined])
+    await expect(outbox.next()).resolves.toMatchObject({
+      operationId: '019b9ccb-3f71-7000-8000-000000000100',
+      baseVersion: 5,
+    })
+    await expect(scripts.get(aggregate.id)).resolves.toMatchObject({
+      title: 'Локальная версия во время ответа',
+      serverVersion: 5,
+      syncStatus: 'pending',
+    })
+  })
+
+  it('does not expose an uncommitted local snapshot to external outbox reads', async () => {
+    await makeAction().execute({ aggregate })
+    const scripts = new SqliteScriptRepository(driver)
+    const outbox = new SqliteOutboxRepository(driver)
+    const unitOfWork = new LocalUnitOfWork(driver)
+    let entered!: () => void
+    const transactionEntered = new Promise<void>((resolve) => { entered = resolve })
+    let release!: () => void
+    const holdTransaction = new Promise<void>((resolve) => { release = resolve })
+    const uncommitted = { ...aggregate, title: 'Незакоммиченная версия' }
+    const failingSave = unitOfWork.run(async (tx) => {
+      await scripts.save(uncommitted, tx)
+      await outbox.upsertLatestSnapshot({
+        operationId: '019b9ccb-3f71-7000-8000-000000000100',
+        aggregateId: aggregate.id,
+        baseVersion: aggregate.serverVersion,
+        type: 'script.replace',
+        payload: uncommitted,
+        createdAt: '2026-08-06T06:07:00.000Z',
+      }, tx)
+      entered()
+      await holdTransaction
+      throw new Error('local save failed after writing')
+    })
+    await transactionEntered
+
+    let readFinished = false
+    const queuedRead = outbox.next().then((command) => {
+      readFinished = true
+      return command
+    })
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(readFinished).toBe(false)
+    release()
+    await expect(failingSave).rejects.toThrow('local save failed after writing')
+    await expect(queuedRead).resolves.toMatchObject({
+      payload: expect.objectContaining({ title: aggregate.title }),
+    })
+  })
+
+  it('replaces a placeholder cue-set identity with the later server identity', async () => {
+    const scripts = new SqliteScriptRepository(driver)
+    const card = aggregate.cards[0]!
+    const placeholder = {
+      ...aggregate,
+      cards: [{
+        ...card,
+        cueSet: {
+          ...card.cueSet,
+          id: card.id,
+          cues: [],
+          sourceHash: null,
+          status: 'missing' as const,
+          version: 0,
+        },
+      }, aggregate.cards[1]!],
+    }
+    await scripts.save(placeholder)
+
+    await scripts.save(aggregate)
+
+    await expect(scripts.get(aggregate.id)).resolves.toMatchObject({
+      cards: [{
+        cueSet: {
+          id: card.cueSet.id,
+          cues: card.cueSet.cues,
+          status: 'ready',
+        },
+      }, expect.anything()],
+    })
   })
 
   it('preserves the recording cursor when an existing aggregate is saved', async () => {

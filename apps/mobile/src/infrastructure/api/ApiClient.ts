@@ -24,6 +24,7 @@ interface ErrorEnvelope {
     readonly message: string
     readonly correlation_id: string
     readonly fields?: Readonly<Record<string, readonly string[]>>
+    readonly conflict?: unknown
   }
 }
 
@@ -88,6 +89,7 @@ export class ApiClient implements RequestClient {
           envelope?.error.message ?? 'Запрос не может быть выполнен.',
           envelope?.error.correlation_id ?? correlationId,
           envelope?.error.fields,
+          envelope?.error.conflict,
         )
       }
 

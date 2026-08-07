@@ -222,7 +222,7 @@ export interface components {
             version: number;
             /** Format: date-time */
             deleted_at?: string | null;
-            cue_set: components["schemas"]["CueSetSnapshot"];
+            cue_set: components["schemas"]["CueSetSnapshot"] | null;
         };
         CueSetSnapshot: {
             /** Format: uuid */

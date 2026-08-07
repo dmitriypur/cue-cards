@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, onMounted, onUnmounted, ref } from 'vue'
+import { computed, inject, onMounted, onUnmounted, ref } from 'vue'
 
 import {
   libraryDependenciesKey,
@@ -9,6 +9,8 @@ import { useLibraryStore } from '@/features/library/library.store'
 import ScriptListItem from '@/features/library/components/ScriptListItem.vue'
 import ConfirmDialog from '@/shared/ui/ConfirmDialog.vue'
 
+const props = defineProps<{ readonly focus?: string }>()
+
 const dependencies = inject(libraryDependenciesKey, null)
 const navigation = inject(libraryNavigationKey, null)
 const store = useLibraryStore()
@@ -16,6 +18,9 @@ const actionError = ref<string | null>(null)
 const scriptToDelete = ref<string | null>(null)
 const online = ref(dependencies?.isOnline() ?? false)
 const undoing = ref(false)
+const focusedIds = computed(() => new Set(
+  (props.focus ?? '').split(',').map((id) => id.trim()).filter((id) => id.length > 0),
+))
 
 function refreshConnectivity(): void {
   online.value = dependencies?.isOnline() ?? false
@@ -129,6 +134,7 @@ async function undoDeletion(): Promise<void> {
           v-for="script in store.scripts"
           :key="script.id"
           :script="script"
+          :focused="focusedIds.has(script.id)"
           @delete="scriptToDelete = $event"
           @edit="openScript($event, 'edit')"
           @record="openScript($event, 'record')"

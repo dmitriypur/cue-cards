@@ -7,6 +7,7 @@ import type {
   SqlTransaction,
   SqlValue,
 } from '@/infrastructure/sqlite/SqlDriver'
+import { SerializedTransactionQueue } from '@/infrastructure/sqlite/SerializedTransactionQueue'
 
 class NodeSqlExecutor implements SqlTransaction {
   public constructor(
@@ -48,6 +49,7 @@ class NodeSqlExecutor implements SqlTransaction {
 
 export class InMemorySqlDriver extends NodeSqlExecutor implements SqlDriver {
   private readonly failureState: { fragment: string | null }
+  private readonly operations = new SerializedTransactionQueue()
 
   public constructor() {
     const database = new DatabaseSync(':memory:')
@@ -60,17 +62,38 @@ export class InMemorySqlDriver extends NodeSqlExecutor implements SqlDriver {
     this.failureState.fragment = fragment
   }
 
-  public async transaction<T>(work: (tx: SqlTransaction) => Promise<T>): Promise<T> {
-    this.database.exec('BEGIN IMMEDIATE')
+  public override execute(statements: string): Promise<void> {
+    return this.operations.run(() => super.execute(statements))
+  }
 
-    try {
-      const result = await work(this)
-      this.database.exec('COMMIT')
-      return result
-    } catch (error) {
-      this.database.exec('ROLLBACK')
-      throw error
-    }
+  public override run(
+    statement: string,
+    values: readonly SqlValue[] = [],
+  ): Promise<SqlRunResult> {
+    return this.operations.run(() => super.run(statement, values))
+  }
+
+  public override query<T extends SqlRow>(
+    statement: string,
+    values: readonly SqlValue[] = [],
+  ): Promise<readonly T[]> {
+    return this.operations.run(() => super.query<T>(statement, values))
+  }
+
+  public async transaction<T>(work: (tx: SqlTransaction) => Promise<T>): Promise<T> {
+    return this.operations.run(async () => {
+      this.database.exec('BEGIN IMMEDIATE')
+      const transaction = new NodeSqlExecutor(this.database, this.failureState)
+
+      try {
+        const result = await work(transaction)
+        this.database.exec('COMMIT')
+        return result
+      } catch (error) {
+        this.database.exec('ROLLBACK')
+        throw error
+      }
+    })
   }
 
   public close(): void {

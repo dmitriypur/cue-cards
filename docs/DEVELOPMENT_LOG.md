@@ -164,4 +164,5 @@
 - TDD RED/GREEN covered domain validation, API ownership/entitlements/rate limits, provider adapter mapping, success/failure/batching, prompt byte limits, source preservation, stale hashes, manual cues, usage, and exception sanitization.
 - Final SQLite API verification passed 88 tests with 87 passed, 1 PostgreSQL-only skipped, and 615 assertions; Pint passed. Final PostgreSQL parity passed 88 tests/622 assertions.
 - Mobile regression passed 150 tests in 32 files, strict typecheck, production build, and E2E gate. OpenAPI generation was deterministic at Git object hash `3da42f7bc0e3800e9e997bfd27e5dcba17970e74`.
+- Closed the missing operational verification with a disposable SQLite database queue smoke: a synthetic probe was dispatched to queue `ai`, the real command `php artisan queue:work --queue=ai --tries=3 --stop-when-empty --verbose` reported `DONE`, and direct database verification returned `jobs=0`, `failed_jobs=0`, marker=`processed`. The probe class was removed after the run and no external AI request was made.
 - Task 011 is complete. Task 012 was not started.

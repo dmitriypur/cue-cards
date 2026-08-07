@@ -1,16 +1,23 @@
-import { createRouter, createWebHistory, type Router } from 'vue-router'
+import {
+  createRouter,
+  createWebHistory,
+  type NavigationGuard,
+  type Router,
+} from 'vue-router'
 
+import LoginView from '@/features/auth/LoginView.vue'
 import ImportPreviewView from '@/features/import/ImportPreviewView.vue'
 import ImportSourceView from '@/features/import/ImportSourceView.vue'
 import ScriptEditorView from '@/features/editor/ScriptEditorView.vue'
 import LibraryView from '@/features/library/LibraryView.vue'
 import RecordingView from '@/features/recording/RecordingView.vue'
 
-export function createAppRouter(): Router {
-  return createRouter({
+export function createAppRouter(authGuard?: NavigationGuard): Router {
+  const router = createRouter({
     history: createWebHistory(),
     routes: [
-      { path: '/', redirect: '/library' },
+      { path: '/', redirect: '/login' },
+      { path: '/login', name: 'login', component: LoginView },
       { path: '/library', name: 'library', component: LibraryView },
       { path: '/import', name: 'import-source', component: ImportSourceView },
       { path: '/import/preview', name: 'import-preview', component: ImportPreviewView },
@@ -28,4 +35,8 @@ export function createAppRouter(): Router {
       },
     ],
   })
+
+  if (authGuard !== undefined) router.beforeEach(authGuard)
+
+  return router
 }

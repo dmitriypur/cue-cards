@@ -4,7 +4,10 @@ import { v7 as uuidv7 } from 'uuid'
 import { createApp } from 'vue'
 
 import App from '@/App.vue'
+import { createAuthGuard } from '@/app/authGuard'
 import { createAppRouter } from '@/app/router'
+import { Login } from '@/application/auth/Login'
+import { Logout } from '@/application/auth/Logout'
 import { ImportWorkflow } from '@/application/import/ImportWorkflow'
 import { ParseSourceDocument } from '@/application/import/ParseSourceDocument'
 import { SaveImportDraft } from '@/application/import/SaveImportDraft'
@@ -21,6 +24,11 @@ import { SaveScriptAggregate } from '@/application/scripts/SaveScriptAggregate'
 import { SplitCard } from '@/application/scripts/SplitCard'
 import { UpdateCard } from '@/application/scripts/UpdateCard'
 import { UpdateCues } from '@/application/scripts/UpdateCues'
+import {
+  authDependenciesKey,
+  authNavigationKey,
+} from '@/features/auth/auth.dependencies'
+import { useAuthStore } from '@/features/auth/auth.store'
 import {
   editorDependenciesKey,
   type EditorDependencies,
@@ -39,11 +47,13 @@ import {
   type RecordingDependencies,
 } from '@/features/recording/recording.dependencies'
 import { CapacitorSourceFilePicker } from '@/infrastructure/capacitor/CapacitorSourceFilePicker'
+import { SecureTokenStore } from '@/infrastructure/capacitor/SecureTokenStore'
 import {
   registerAppBackgroundListener,
   registerAppStateListener,
 } from '@/infrastructure/capacitor/CapacitorAppBackground'
 import { CapacitorWakeLock } from '@/infrastructure/capacitor/CapacitorWakeLock'
+import { ApiClient } from '@/infrastructure/api/ApiClient'
 import { CapacitorSqlDriver } from '@/infrastructure/sqlite/CapacitorSqlDriver'
 import { LocalUnitOfWork } from '@/infrastructure/sqlite/LocalUnitOfWork'
 import { SqliteOutboxRepository } from '@/infrastructure/sqlite/SqliteOutboxRepository'
@@ -51,7 +61,20 @@ import { SqliteRecordingSessionRepository } from '@/infrastructure/sqlite/Sqlite
 import { SqliteScriptRepository } from '@/infrastructure/sqlite/SqliteScriptRepository'
 
 export async function bootstrapApp(): Promise<void> {
-  const appRouter = createAppRouter()
+  const pinia = createPinia()
+  const tokens = new SecureTokenStore()
+  const api = new ApiClient({
+    baseUrl: import.meta.env.VITE_API_BASE_URL ?? '',
+    tokens,
+  })
+  const login = new Login(api, tokens)
+  const logout = new Logout(api, tokens)
+  const authStore = useAuthStore(pinia)
+  const appRouter = createAppRouter(createAuthGuard({
+    get initialized() { return authStore.initialized },
+    get session() { return authStore.session },
+    restore: async () => { await authStore.restore(login) },
+  }))
   let importWorkflow: ImportWorkflow | null = null
   let libraryDependencies: LibraryDependencies | null = null
   let editorDependencies: EditorDependencies | null = null
@@ -110,8 +133,12 @@ export async function bootstrapApp(): Promise<void> {
 
   const app = createApp(App)
 
-  app.use(createPinia())
+  app.use(pinia)
   app.use(appRouter)
+  app.provide(authDependenciesKey, { login, logout })
+  app.provide(authNavigationKey, {
+    openLibrary: async () => { await appRouter.push('/library') },
+  })
   if (importWorkflow !== null) app.provide(importWorkflowKey, importWorkflow)
   if (libraryDependencies !== null) {
     app.provide(libraryDependenciesKey, libraryDependencies)

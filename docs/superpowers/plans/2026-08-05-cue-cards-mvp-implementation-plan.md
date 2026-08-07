@@ -693,21 +693,21 @@ public function schema(JsonSchema $schema): array
 - Produces `SafeContext::fromRequest(Request $request): array` containing only correlation ID, user ID, operation ID, generation ID, route, and outcome.
 - Consumes fake API and in-memory adapters only in Playwright; production composition remains SQLite/Capacitor/API based.
 
-- [ ] Configure Playwright with a deterministic fake backend, web-compatible in-memory repositories, Chromium mobile viewport, reduced motion, and trace-on-first-retry.
-- [ ] Write the full journey test first: login → import synthetic Markdown → correct preview → save → fake-generate 3–5 cues → edit/reorder → record → switch cue/full → force offline → edit → reconnect → sync.
-- [ ] Run `npm run test:e2e -- youtube-script-flow`; expected failure must identify the first missing integration behavior, then fix only wiring defects without weakening assertions.
-- [ ] Write offline recovery first: preload SQLite-compatible state, reload the app, recover recording position and outbox, receive 409, duplicate local copy, and verify both copies remain visible.
-- [ ] Run the focused offline test to red, correct composition/persistence wiring, then rerun it to green.
-- [ ] Write accessibility checks for visible keyboard focus, accessible names, 48×48 touch targets, no horizontal overflow at 320 px, font scale 1.4, and computed contrast of every semantic surface/foreground token pair in both themes.
-- [ ] Run the accessibility test to red on any violation; fix tokens/components rather than excluding selectors.
-- [ ] Write `LogRedactionTest` first with sentinel script text, password, bearer token, and AI key; exercise login, sync failure, and AI failure, then assert none of the sentinels appears in captured logs.
-- [ ] Run `php artisan test --filter=LogRedactionTest`; expected failure: unrestricted request context reaches logs.
-- [ ] Implement correlation middleware, allowlisted `SafeContext`, and mobile `SafeLogger`; remove raw exception/request serialization from application logs.
-- [ ] Write technical-safeguard tests for login throttling, AI rate limiting, 1 MiB import/API payload policy, sync batch 20, generation timeout, and three-attempt cap; assert superadmin bypasses only commercial entitlements.
-- [ ] Run focused safeguard tests, then full API and mobile suites.
-- [ ] Add CI jobs for OpenAPI drift, Playwright, PostgreSQL parity, and Gradle unit/debug assembly; upload test reports and debug APK only on CI failure or tagged builds.
-- [ ] Run the exact clean verification matrix documented in README and record commands, counts, and outcomes in the development log.
-- [ ] Commit: `test: harden end-to-end offline and privacy behavior`.
+- [x] Configure Playwright with a deterministic fake backend, web-compatible in-memory repositories, Chromium mobile viewport, reduced motion, and trace-on-first-retry.
+- [x] Write the full journey test first: login → import synthetic Markdown → correct preview → save → fake-generate 3–5 cues → edit/reorder → record → switch cue/full → force offline → edit → reconnect → sync.
+- [x] Run `npm run test:e2e -- youtube-script-flow`; expected failure must identify the first missing integration behavior, then fix only wiring defects without weakening assertions.
+- [x] Write offline recovery first: preload SQLite-compatible state, reload the app, recover recording position and outbox, receive 409, duplicate local copy, and verify both copies remain visible.
+- [x] Run the focused offline test to red, correct composition/persistence wiring, then rerun it to green.
+- [x] Write accessibility checks for visible keyboard focus, accessible names, 48×48 touch targets, no horizontal overflow at 320 px, font scale 1.4, and computed contrast of every semantic surface/foreground token pair in both themes.
+- [x] Run the accessibility test to red on any violation; fix tokens/components rather than excluding selectors.
+- [x] Write `LogRedactionTest` first with sentinel script text, password, bearer token, and AI key; exercise login, sync failure, and AI failure, then assert none of the sentinels appears in captured logs.
+- [x] Run `php artisan test --filter=LogRedactionTest`; expected failure: unrestricted request context reaches logs.
+- [x] Implement correlation middleware, allowlisted `SafeContext`, and mobile `SafeLogger`; remove raw exception/request serialization from application logs.
+- [x] Write technical-safeguard tests for login throttling, AI rate limiting, 1 MiB import/API payload policy, sync batch 20, generation timeout, and three-attempt cap; assert superadmin bypasses only commercial entitlements.
+- [x] Run focused safeguard tests, then full API and mobile suites.
+- [x] Add CI jobs for OpenAPI drift, Playwright, PostgreSQL parity, and Gradle unit/debug assembly; upload test reports and debug APK only on CI failure or tagged builds.
+- [x] Run the exact clean verification matrix documented in README and record commands, counts, and outcomes in the development log.
+- [x] Commit: `test: harden end-to-end offline and privacy behavior`.
 
 ## Task 14: Produce and verify the signed Android release APK
 

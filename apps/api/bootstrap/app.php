@@ -28,7 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->api(append: [CorrelationId::class]);
+        $middleware->api(prepend: [CorrelationId::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $invalidSyncPayload = static function (Request $request): JsonResponse {

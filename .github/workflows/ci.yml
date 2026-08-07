@@ -94,6 +94,10 @@ jobs:
           cache: npm
           cache-dependency-path: apps/mobile/package-lock.json
       - run: npm ci
+      - name: Check generated OpenAPI types
+        run: |
+          npm run contract:generate
+          git diff --exit-code -- src/infrastructure/api/generated/schema.ts
       - run: npm run test:unit
       - run: npm run typecheck
       - run: npm run build

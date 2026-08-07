@@ -461,20 +461,20 @@ return this.unitOfWork.run(async (tx) => {
 - Produces `ApiClient.request<T>(operation: ApiOperation<T>): Promise<T>` with bearer authentication, correlation ID, timeout, and normalized errors.
 - Consumes generated `paths` types from `schema.ts`; handwritten duplicate response DTOs are prohibited.
 
-- [ ] Write `docs/api/openapi.yaml` first with `/api/v1`, bearer authentication, UUIDs, integer versions, JSON aggregate snapshots, the stable error envelope, and explicit 401/404/409/422/429 responses.
-- [ ] Add `contract:generate` as `openapi-typescript ../../docs/api/openapi.yaml -o src/infrastructure/api/generated/schema.ts` and generate the committed TypeScript file.
-- [ ] Write `OpenApiContractTest` first to load the YAML, assert every implemented Laravel route has an `operationId`, and verify the login/me/script example responses against their schemas.
-- [ ] Run `php artisan test --filter=OpenApiContractTest`; expected failure is any missing schema or operation mapping, not a network error.
-- [ ] Correct the OpenAPI document and API resources until the contract test passes; rerun `npm run contract:generate` and fail CI when regeneration changes Git output.
-- [ ] Write `AuthActions.test.ts` first: successful login stores the token before fetching `/me`, failed `/me` clears it, logout clears local credentials even when the server is offline, and a missing token enters local-only mode.
-- [ ] Run `npm run test:unit -- AuthActions`; expected failure: actions, token store, and client are absent.
-- [ ] Implement the ports, actions, and `ApiClient` with an `AbortController` timeout; redact authorization headers from error objects and logs.
-- [ ] Implement `SecureTokenStore` as the only module importing `@aparajita/capacitor-secure-storage`; use one constant key `cue_cards.sanctum_token`.
-- [ ] Write the login component test first for email/password/device name, loading state, invalid-credential message, offline/local-only explanation, and password non-persistence.
-- [ ] Run the focused component test; expected failure: login view/store are absent.
-- [ ] Implement the login view/store and route guard: authenticated users enter the library, signed-out users can authenticate, and an expired server token never blocks already persisted scripts or recording routes.
-- [ ] Run API contract/auth tests, mobile auth/component tests, generated-contract drift check, typecheck, production build, and Android debug build.
-- [ ] Update the development log and commit: `feat: add versioned API contract and secure mobile auth`.
+- [x] Write `docs/api/openapi.yaml` first with `/api/v1`, bearer authentication, UUIDs, integer versions, JSON aggregate snapshots, the stable error envelope, and explicit 401/404/409/422/429 responses.
+- [x] Add `contract:generate` as `openapi-typescript ../../docs/api/openapi.yaml -o src/infrastructure/api/generated/schema.ts` and generate the committed TypeScript file.
+- [x] Write `OpenApiContractTest` first to load the YAML, assert every implemented Laravel route has an `operationId`, and verify the login/me/script example responses against their schemas.
+- [x] Run `php artisan test --filter=OpenApiContractTest`; expected failure is any missing schema or operation mapping, not a network error.
+- [x] Correct the OpenAPI document and API resources until the contract test passes; rerun `npm run contract:generate` and fail CI when regeneration changes Git output.
+- [x] Write `AuthActions.test.ts` first: successful login stores the token before fetching `/me`, failed `/me` clears it, logout clears local credentials even when the server is offline, and a missing token enters local-only mode.
+- [x] Run `npm run test:unit -- AuthActions`; expected failure: actions, token store, and client are absent.
+- [x] Implement the ports, actions, and `ApiClient` with an `AbortController` timeout; redact authorization headers from error objects and logs.
+- [x] Implement `SecureTokenStore` as the only module importing `@aparajita/capacitor-secure-storage`; use one constant key `cue_cards.sanctum_token`.
+- [x] Write the login component test first for email/password/device name, loading state, invalid-credential message, offline/local-only explanation, and password non-persistence.
+- [x] Run the focused component test; expected failure: login view/store are absent.
+- [x] Implement the login view/store and route guard: authenticated users enter the library, signed-out users can authenticate, and an expired server token never blocks already persisted scripts or recording routes.
+- [x] Run API contract/auth tests, mobile auth/component tests, generated-contract drift check, typecheck, production build, and Android debug build.
+- [x] Update the development log and commit: `feat: add versioned API contract and secure mobile auth`.
 
 ## Task 9: Process idempotent sync commands on Laravel
 

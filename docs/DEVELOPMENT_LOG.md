@@ -105,3 +105,20 @@
 - Disposable SQLite verification: `migrate:fresh --seed --force` completed all migrations and `SuperadminSeeder` using synthetic environment values.
 - Mobile regression verification: `npm run test:unit` passed 90 tests in 23 files; `npm run typecheck` and `npm run build` exited successfully. The existing Node experimental SQLite warning remains unchanged.
 - Task 007 is complete. Task 008 was not started.
+
+## 2026-08-07 — Task 008: OpenAPI contract and secure mobile authentication
+
+- Confirmed Tasks 001–007 from Git merges, completed task checkpoints, and recorded verification evidence before starting Task 008 on `codex/task-008-openapi-auth` from clean `main` at `773c83c`.
+- Added the canonical OpenAPI 3.0 contract for login, logout, identity, script reads, sync commands/change feed, and script/card AI generation status. It defines bearer authentication, UUID/versioned aggregate snapshots, stable error envelopes, and explicit 401/404/409/422/429 responses.
+- Observed contract RED: `php artisan test --filter=OpenApiContractTest` failed all four cases because `docs/api/openapi.yaml` was missing. GREEN passes 4 tests/213 assertions, maps every implemented Laravel route to an operation ID, and validates representative login/me/script examples against their schemas.
+- Added `symfony/yaml` as a dev-only API dependency, generated and committed `apps/mobile/src/infrastructure/api/generated/schema.ts`, corrected `contract:generate`, and added a CI drift gate. Regeneration retained the same Git object hash `ba6b5332b1f7f1a1137ae0a82e2e6b6c995ec0d8`.
+- Observed auth-action RED on absent Login/Logout/TokenStore/client modules. GREEN covers storing the token before `/me`, clearing it after failed identity loading, clearing local credentials despite offline logout, missing-token local-only mode, and expired-token cleanup.
+- Observed ApiClient RED (`ApiClient is not a constructor`). GREEN covers bearer and correlation headers, JSON requests, no-content responses, AbortController timeout, stable API error normalization, and exclusion of the bearer token from serialized errors.
+- Observed SecureTokenStore RED on the missing adapter. GREEN proves `cue_cards.sanctum_token` is the only affected key; `SecureTokenStore` remains the only application module importing the Capacitor secure-storage package.
+- Observed LoginView/auth-guard RED on missing modules, then additional RED regressions for the absent first-launch login redirect and invisible local-only entry. GREEN covers email/password/device name, loading, invalid credentials, offline explanation, password non-persistence, authenticated redirect, explicit local-library access, and direct local recording access after token expiry.
+- Review found and corrected four Important gaps: first launch bypassed login, application actions depended on an infrastructure request abstraction, OpenAPI combined a `/api/v1` server with already-prefixed paths, and the cue status enum omitted `generating`. No Critical or Important issue remains in the final reviewed snapshot.
+- Final API verification: `php artisan test` passed 27 tests/310 assertions; `./vendor/bin/pint --test` passed.
+- Final mobile verification: `npm run test:unit` passed 106 tests in 27 files; `npm run typecheck`, `npm run build`, and `npm run test:e2e` exited successfully. Vitest retains Node's upstream experimental warning for the built-in `node:sqlite` adapter.
+- Contract/native verification: deterministic `npm run contract:generate`, `npm run cap:sync`, and `env JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ANDROID_HOME=/opt/homebrew/share/android-commandlinetools ./gradlew testDebugUnitTest assembleDebug` passed; Gradle reported 297 actionable tasks (29 executed, 268 up-to-date) and only the two unchanged `flatDir` warnings.
+- PostgreSQL 16 contract/auth parity remains covered by the existing CI job; no local PostgreSQL server or Docker daemon was used for this task.
+- Task 008 is complete. Task 009 was not started.

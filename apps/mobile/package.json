@@ -13,7 +13,7 @@
     "test:e2e": "playwright test --pass-with-no-tests",
     "cap:sync": "cap sync android",
     "android:debug": "cap build android",
-    "contract:generate": "openapi-typescript ../../docs/api/openapi.yaml -o src/infrastructure/api/generated.ts"
+    "contract:generate": "openapi-typescript ../../docs/api/openapi.yaml -o src/infrastructure/api/generated/schema.ts"
   },
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "8.0.0",

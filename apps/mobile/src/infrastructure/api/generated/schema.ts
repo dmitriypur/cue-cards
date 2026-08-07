@@ -648,7 +648,14 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    operation_id: string;
+                };
+            };
+        };
         responses: {
             /** @description Script cue generation queued. */
             202: {
@@ -676,7 +683,15 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": {
+                    replace_manual: boolean;
+                    /** Format: uuid */
+                    operation_id: string;
+                };
+            };
+        };
         responses: {
             /** @description Card cue generation queued. */
             202: {

@@ -1,12 +1,20 @@
 import { defineStore } from 'pinia'
 
 import type { RecordingMode, RecordingSession } from '@/application/ports/RecordingSessionRepository'
-import type { ScriptAggregate } from '@/domain/scripts/types'
+import type { ScriptAggregate, ScriptCard } from '@/domain/scripts/types'
 import type { RecordingDependencies } from '@/features/recording/recording.dependencies'
 
 export type RecordingLoadState = 'idle' | 'loading' | 'ready' | 'failed'
 
 const mutationQueues = new WeakMap<object, Promise<void>>()
+
+type CueChoice = 'automatic' | 'explicit' | 'unavailable'
+
+function cueChoice(card: ScriptCard | undefined): CueChoice {
+  if (card === undefined || card.cueSet.cues.length === 0) return 'unavailable'
+  if (card.cueSet.manuallyEdited || card.cueSet.status === 'stale') return 'explicit'
+  return card.cueSet.status === 'ready' ? 'automatic' : 'unavailable'
+}
 
 async function serializeMutation(owner: object, work: () => Promise<void>): Promise<void> {
   const previous = mutationQueues.get(owner) ?? Promise.resolve()
@@ -26,12 +34,27 @@ export const useRecordingStore = defineStore('recording', {
     appActive: true,
     wakeLockHeld: false,
     scrollPositions: {} as Record<string, number>,
+    cueOverrides: {} as Record<string, boolean>,
   }),
   getters: {
     activeCards(state) {
       return (state.script?.cards ?? [])
         .filter(({ deletedAt }) => deletedAt === null)
         .sort((left, right) => left.position - right.position)
+    },
+    canChooseCues(state): boolean {
+      const card = state.script?.cards.find(({ id }) => id === state.session?.currentCardId)
+      return cueChoice(card) !== 'unavailable'
+    },
+    effectiveMode(state): RecordingMode {
+      if (state.session === null || state.session.mode === 'full') return 'full'
+      const card = state.script?.cards.find(({ id }) => id === state.session?.currentCardId)
+      const choice = cueChoice(card)
+      if (choice === 'automatic') return 'cues'
+      if (choice === 'explicit' && card !== undefined && state.cueOverrides[card.id] === true) {
+        return 'cues'
+      }
+      return 'full'
     },
   },
   actions: {
@@ -48,6 +71,10 @@ export const useRecordingStore = defineStore('recording', {
           const savedCardExists = saved !== null
             && this.activeCards.some(({ id }) => id === saved.currentCardId)
           this.session = savedCardExists ? saved : null
+          const savedCard = this.activeCards.find(({ id }) => id === this.session?.currentCardId)
+          if (this.session?.mode === 'cues' && cueChoice(savedCard) === 'explicit') {
+            this.cueOverrides[this.session.currentCardId] = true
+          }
           if (this.session !== null && this.routeActive && this.appActive) {
             await dependencies.wakeLock.acquire()
             this.wakeLockHeld = true
@@ -72,6 +99,10 @@ export const useRecordingStore = defineStore('recording', {
             scriptId: this.script.id,
             ...input,
           })
+          const selectedCard = this.activeCards.find(({ id }) => id === input.cardId)
+          if (input.mode === 'cues' && cueChoice(selectedCard) === 'explicit') {
+            this.cueOverrides[input.cardId] = true
+          }
           this.wakeLockHeld = true
           this.captureWakeLockWarning(dependencies)
         } catch {
@@ -110,8 +141,17 @@ export const useRecordingStore = defineStore('recording', {
       if (this.session === null) return
       await serializeMutation(this, async () => {
         if (this.session === null) return
+        const card = this.activeCards.find(({ id }) => id === this.session?.currentCardId)
+        const choice = cueChoice(card)
+        if (choice === 'unavailable') return
+        const showingCues = this.session.mode === 'cues'
+          && (choice === 'automatic' || (card !== undefined && this.cueOverrides[card.id] === true))
+        if (!showingCues && choice === 'explicit' && card !== undefined) {
+          this.cueOverrides[card.id] = true
+          if (this.session.mode === 'cues') return
+        }
         await this.persistDisplay({
-          mode: this.session.mode === 'cues' ? 'full' : 'cues',
+          mode: showingCues ? 'full' : 'cues',
           fontScale: this.session.fontScale,
         }, dependencies)
       })

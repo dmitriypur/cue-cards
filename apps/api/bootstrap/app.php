@@ -1,6 +1,7 @@
 <?php
 
 use App\Application\AiAssistance\FeatureNotAvailable;
+use App\Application\AiAssistance\ManualCueReplacementRequired;
 use App\Application\Sync\InvalidSyncCommand;
 use App\Application\Sync\SyncConflict;
 use App\Domain\Scripts\InvalidScriptSnapshot;
@@ -108,6 +109,18 @@ return Application::configure(basePath: dirname(__DIR__))
                 'message' => 'Функция недоступна для этого аккаунта.',
                 'correlation_id' => $request->header('X-Correlation-ID', (string) Str::uuid()),
             ]], 403);
+        });
+
+        $exceptions->render(function (ManualCueReplacementRequired $exception, Request $request): ?JsonResponse {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json(['error' => [
+                'code' => 'AI_MANUAL_CUES_CONFIRMATION_REQUIRED',
+                'message' => 'Подтвердите замену ручных тезисов.',
+                'correlation_id' => $request->header('X-Correlation-ID', (string) Str::uuid()),
+            ]], 409);
         });
 
         $exceptions->render(function (ModelNotFoundException $exception, Request $request) use ($notFound): ?JsonResponse {

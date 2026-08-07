@@ -2,6 +2,8 @@
 import { storeToRefs } from 'pinia'
 import { inject, ref } from 'vue'
 
+import { aiCuesDependenciesKey } from '@/features/ai-cues/aiCues.dependencies'
+import { useAiCuesStore } from '@/features/ai-cues/aiCues.store'
 import ImportBlockCard from '@/features/import/components/ImportBlockCard.vue'
 import {
   importNavigationKey,
@@ -15,13 +17,15 @@ const emit = defineEmits<{
 }>()
 
 const store = useImportStore()
+const aiCues = useAiCuesStore()
 const { draft, hasErrors } = storeToRefs(store)
 const workflow = inject(importWorkflowKey, null)
 const navigation = inject(importNavigationKey, null)
+const aiDependencies = inject(aiCuesDependenciesKey, null)
 const saving = ref(false)
 const saveError = ref<string | null>(null)
 
-async function save(): Promise<void> {
+async function save(createCues: boolean): Promise<void> {
   if (draft.value === null) return
   if (workflow === null) {
     emit('save')
@@ -33,6 +37,9 @@ async function save(): Promise<void> {
   try {
     const scriptId = await workflow.saveDraft(draft.value)
     store.clearDraft()
+    if (createCues && aiDependencies !== null) {
+      await aiCues.startScript(scriptId, aiDependencies)
+    }
     await navigation?.openLibrary(scriptId)
   } catch (reason) {
     saveError.value = reason instanceof Error ? reason.message : 'Не удалось сохранить сценарий.'
@@ -97,11 +104,19 @@ async function cancel(): Promise<void> {
       </button>
       <button
         type="button"
+        class="rounded-md border px-4 py-3 disabled:opacity-50"
+        :disabled="hasErrors || saving"
+        @click="save(false)"
+      >
+        {{ saving ? 'Сохраняем…' : 'Сохранить без ИИ' }}
+      </button>
+      <button
+        type="button"
         class="rounded-md bg-primary px-4 py-3 text-primary-foreground disabled:opacity-50"
         :disabled="hasErrors || saving"
-        @click="save"
+        @click="save(true)"
       >
-        {{ saving ? 'Сохраняем…' : 'Сохранить' }}
+        {{ saving ? 'Сохраняем…' : 'Сохранить и создать тезисы' }}
       </button>
     </footer>
   </section>

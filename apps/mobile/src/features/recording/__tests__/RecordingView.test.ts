@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { RecordingSession } from '@/application/ports/RecordingSessionRepository'
 import type { ScriptAggregate, ScriptCard } from '@/domain/scripts/types'
 import RecordingView from '@/features/recording/RecordingView.vue'
+import { useRecordingStore } from '@/features/recording/recording.store'
 import {
   recordingDependenciesKey,
   type RecordingDependencies,
@@ -58,6 +59,7 @@ function createHarness(
   initialSession: RecordingSession | null = null,
   initialWakeWarning: string | null = null,
   initialScriptGate: Promise<void> | null = null,
+  sourceScript: ScriptAggregate = script,
 ) {
   let session = initialSession
   let appState: ((isActive: boolean) => void | Promise<void>) | null = null
@@ -70,7 +72,7 @@ function createHarness(
   const dependencies: RecordingDependencies = {
     loadScript: { execute: async () => {
       await initialScriptGate
-      return script
+      return sourceScript
     } },
     loadSession: async () => session,
     startRecording: {
@@ -90,9 +92,11 @@ function createHarness(
         if (session === null) throw new Error('missing session')
         const snapshot = session
         await Promise.resolve()
-        const index = script.cards.findIndex(({ id }) => id === snapshot.currentCardId)
+        const index = sourceScript.cards.findIndex(({ id }) => id === snapshot.currentCardId)
         const offset = direction === 'previous' ? -1 : 1
-        const next = script.cards[Math.min(Math.max(index + offset, 0), script.cards.length - 1)]!
+        const next = sourceScript.cards[
+          Math.min(Math.max(index + offset, 0), sourceScript.cards.length - 1)
+        ]!
         session = { ...snapshot, currentCardId: next.id, updatedAt: now }
         return session
       },
@@ -209,6 +213,72 @@ describe('RecordingView', () => {
     expect(context.session()?.currentCardId).toBe('card-c')
     expect(wrapper.text()).toContain('3 из 3')
     expect(wrapper.get('button[aria-label="Следующая карточка"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('falls back to full text for pending cues and automatically returns when they become ready', async () => {
+    const pendingScript: ScriptAggregate = {
+      ...script,
+      cards: script.cards.map((item) => item.id === 'card-b'
+        ? { ...item, cueSet: { ...item.cueSet, cues: [], status: 'pending' } }
+        : item),
+    }
+    const context = createHarness({
+      scriptId: script.id,
+      currentCardId: 'card-b',
+      mode: 'cues',
+      fontScale: 1,
+      updatedAt: now,
+    }, null, null, pendingScript)
+    const wrapper = await mountRecording(context.dependencies)
+
+    expect(wrapper.text()).toContain('Полный текст карточки 2')
+    expect(context.session()?.mode).toBe('cues')
+    expect(wrapper.get('button[aria-label="Показать тезисы"]').attributes('disabled'))
+      .toBeDefined()
+
+    const store = useRecordingStore()
+    store.script = {
+      ...pendingScript,
+      cards: pendingScript.cards.map((item) => item.id === 'card-b'
+        ? { ...item, cueSet: { ...item.cueSet, cues: ['Готовый тезис'], status: 'ready' } }
+        : item),
+    }
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Готовый тезис')
+    expect(context.session()?.mode).toBe('cues')
+  })
+
+  it('allows stale manual cues only after an explicit per-card choice', async () => {
+    const staleScript: ScriptAggregate = {
+      ...script,
+      cards: script.cards.map((item) => item.id === 'card-b'
+        ? {
+            ...item,
+            cueSet: {
+              ...item.cueSet,
+              status: 'stale',
+              manuallyEdited: true,
+              sourceHash: 'old-hash',
+            },
+          }
+        : item),
+    }
+    const context = createHarness({
+      scriptId: script.id,
+      currentCardId: 'card-b',
+      mode: 'full',
+      fontScale: 1,
+      updatedAt: now,
+    }, null, null, staleScript)
+    const wrapper = await mountRecording(context.dependencies)
+
+    expect(wrapper.text()).toContain('Полный текст карточки 2')
+    await wrapper.get('button[aria-label="Показать тезисы"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Короткий тезис один')
+    expect(context.session()?.mode).toBe('cues')
   })
 
   it('keeps independent full-text scroll positions for each card in memory', async () => {

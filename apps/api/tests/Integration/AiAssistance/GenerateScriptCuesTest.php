@@ -3,6 +3,7 @@
 namespace Tests\Integration\AiAssistance;
 
 use App\Application\AiAssistance\CueGenerator;
+use App\Application\AiAssistance\StartCardCueGeneration;
 use App\Application\AiAssistance\StartScriptCueGeneration;
 use App\Domain\AiAssistance\CueGenerationRequest;
 use App\Domain\AiAssistance\CueGenerationResult;
@@ -12,6 +13,7 @@ use App\Models\AiGeneration;
 use App\Models\Card;
 use App\Models\CueSet;
 use App\Models\Script;
+use App\Models\SyncChange;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -42,7 +44,6 @@ class GenerateScriptCuesTest extends TestCase
         $this->assertSame(1, $generation->attempts);
         $this->assertSame(2, $script->refresh()->version);
         $this->assertDatabaseCount('sync_changes', 1);
-
         foreach ($cards as $index => $card) {
             $this->assertSame($originalTexts[$index], $card->refresh()->full_text);
             $this->assertSame('ready', $card->cueSet->status);
@@ -54,7 +55,7 @@ class GenerateScriptCuesTest extends TestCase
     public function test_batches_cards_deterministically_by_configured_prompt_bytes(): void
     {
         config()->set('cue-cards.ai.max_prompt_bytes', 230);
-        [$generation, , $cards] = $this->queuedGeneration();
+        [$generation, $script, $cards] = $this->queuedGeneration();
         $generator = new RecordingCueGenerator;
 
         $this->runJob($generation->id, $generator);
@@ -69,7 +70,7 @@ class GenerateScriptCuesTest extends TestCase
 
     public function test_content_changed_while_provider_runs_preserves_text_and_marks_cues_stale(): void
     {
-        [$generation, , $cards] = $this->queuedGeneration();
+        [$generation, $script, $cards] = $this->queuedGeneration();
         $generator = new RecordingCueGenerator(function () use ($cards): void {
             $cards[0]->update([
                 'full_text' => 'Локально изменённый полный текст.',
@@ -108,7 +109,7 @@ class GenerateScriptCuesTest extends TestCase
 
     public function test_three_failed_attempts_end_safely_without_leaking_provider_exception(): void
     {
-        [$generation, , $cards] = $this->queuedGeneration();
+        [$generation, $script, $cards] = $this->queuedGeneration();
         $sentinel = 'СЕКРЕТНЫЙ ТЕКСТ И API-КЛЮЧ';
         $generator = new RecordingCueGenerator(exception: new RuntimeException($sentinel));
         $job = new GenerateScriptCues($generation->id);
@@ -135,8 +136,71 @@ class GenerateScriptCuesTest extends TestCase
             $this->assertSame('failed', $card->refresh()->cueSet->status);
             $this->assertSame([], $card->cueSet->cues);
         }
+        $this->assertSame(2, $script->refresh()->version);
+        $this->assertDatabaseCount('sync_changes', 1);
+        $snapshot = SyncChange::query()->firstOrFail()->snapshot;
+        $this->assertSame('failed', $snapshot['cards'][0]['cue_set']['status']);
         $this->assertSame([5, 15, 30], $job->backoff());
         $this->assertSame(3, $job->tries);
+    }
+
+    public function test_authorized_manual_replacement_clears_protection_only_after_a_valid_result(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create(['role' => Role::Superadmin]);
+        $script = Script::query()->create([
+            'user_id' => $user->id,
+            'title' => 'Синтетический сценарий',
+            'source_format' => 'markdown',
+            'source_text' => 'Синтетический исходный текст.',
+            'import_hash' => hash('sha256', 'manual replacement'),
+            'status' => 'ready',
+            'version' => 1,
+        ]);
+        $card = Card::query()->create([
+            'script_id' => $script->id,
+            'position' => 0,
+            'title' => 'Ручной блок',
+            'full_text' => 'Полный ручной текст.',
+            'content_hash' => hash('sha256', 'Полный ручной текст.'),
+            'version' => 1,
+        ]);
+        CueSet::query()->create([
+            'card_id' => $card->id,
+            'cues' => ['Ручной один', 'Ручной два', 'Ручной три'],
+            'source_hash' => $card->content_hash,
+            'status' => 'ready',
+            'generation_id' => null,
+            'manually_edited' => true,
+            'version' => 4,
+        ]);
+
+        $generation = app(StartCardCueGeneration::class)->handle($user, $card, true);
+        $this->assertTrue($card->refresh()->cueSet->manually_edited);
+
+        $newManual = ['Новый ручной один', 'Новый ручной два', 'Новый ручной три'];
+        $this->runJob($generation->id, new RecordingCueGenerator(function () use ($card, $newManual): void {
+            $card->cueSet()->update([
+                'cues' => json_encode($newManual, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+                'source_hash' => $card->content_hash,
+                'status' => 'ready',
+                'manually_edited' => true,
+                'version' => 5,
+            ]);
+        }));
+
+        $staleCueSet = $card->refresh()->cueSet;
+        $this->assertTrue($staleCueSet->manually_edited);
+        $this->assertSame('stale', $staleCueSet->status);
+        $this->assertSame($newManual, $staleCueSet->cues);
+
+        $replacement = app(StartCardCueGeneration::class)->handle($user, $card->refresh(), true);
+        $this->runJob($replacement->id, new RecordingCueGenerator);
+
+        $cueSet = $card->refresh()->cueSet;
+        $this->assertFalse($cueSet->manually_edited);
+        $this->assertSame('ready', $cueSet->status);
+        $this->assertSame(['Короткий первый', 'Короткий второй', 'Короткий третий'], $cueSet->cues);
     }
 
     public function test_a_single_oversized_prompt_is_rejected_before_calling_the_provider(): void

@@ -9,8 +9,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
-    'user_id', 'script_id', 'card_id', 'provider', 'model', 'prompt_version',
-    'source_hashes', 'status', 'attempts', 'provider_calls', 'failed_provider_calls',
+    'user_id', 'script_id', 'card_id', 'operation_id', 'replace_manual',
+    'provider', 'model', 'prompt_version', 'source_hashes', 'source_cue_versions',
+    'status', 'attempts', 'provider_calls', 'failed_provider_calls',
     'completed_cards', 'total_cards',
     'provider_request_id', 'input_tokens', 'output_tokens', 'cost_minor_units',
     'error_code', 'error_message', 'started_at', 'completed_at',
@@ -42,6 +43,8 @@ class AiGeneration extends Model
     {
         return [
             'source_hashes' => 'array',
+            'source_cue_versions' => 'array',
+            'replace_manual' => 'boolean',
             'status' => GenerationStatus::class,
             'attempts' => 'integer',
             'provider_calls' => 'integer',

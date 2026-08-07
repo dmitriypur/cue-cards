@@ -1,13 +1,21 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 
+import type { AiGeneration } from '@/application/ports/AiGenerationGateway'
 import type { ScriptCard } from '@/domain/scripts/types'
+import GenerationProgress from '@/features/ai-cues/components/GenerationProgress.vue'
+import RegenerateCardButton from '@/features/ai-cues/components/RegenerateCardButton.vue'
 import CueListEditor from '@/features/editor/components/CueListEditor.vue'
 
 const props = defineProps<{
   readonly card: ScriptCard
   readonly index: number
   readonly total: number
+  readonly generation: AiGeneration | null
+  readonly generationOffline: boolean
+  readonly unrestricted: boolean
+  readonly generationError: string | null
+  readonly generationBusy: boolean
 }>()
 
 const emit = defineEmits<{
@@ -16,6 +24,8 @@ const emit = defineEmits<{
   split: [payload: { readonly cardId: string; readonly offset: number }]
   merge: [cardId: string]
   saveCues: [payload: { readonly cardId: string; readonly cues: readonly string[] }]
+  regenerate: [payload: { readonly cardId: string; readonly replaceManual: boolean }]
+  refreshGeneration: [cardId: string]
 }>()
 
 const title = ref(props.card.title)
@@ -91,6 +101,31 @@ const cueLabels: Record<ScriptCard['cueSet']['status'], string> = {
     </label>
 
     <CueListEditor :cues="card.cueSet.cues" @save="emit('saveCues', { cardId: card.id, cues: $event })" />
+
+    <div class="mt-4 grid gap-3">
+      <GenerationProgress
+        :status="card.cueSet.status"
+        :generation="generation"
+        :offline="generationOffline"
+        :unrestricted="unrestricted"
+        :retryable="!card.cueSet.manuallyEdited"
+        @refresh="emit('refreshGeneration', card.id)"
+        @retry="emit('regenerate', { cardId: card.id, replaceManual: false })"
+      />
+      <p
+        v-if="generationError"
+        data-generation-error
+        role="alert"
+        class="text-sm text-destructive"
+      >
+        {{ generationError }}
+      </p>
+      <RegenerateCardButton
+        :manually-edited="card.cueSet.manuallyEdited"
+        :disabled="generationBusy"
+        @regenerate="emit('regenerate', { cardId: card.id, replaceManual: $event })"
+      />
+    </div>
 
     <div class="mt-4 flex flex-wrap gap-2">
       <button

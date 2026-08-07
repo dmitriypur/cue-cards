@@ -190,6 +190,18 @@ paths:
       - $ref: '#/components/parameters/ScriptId'
     post:
       operationId: startScriptCueGeneration
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [operation_id]
+              properties:
+                operation_id:
+                  type: string
+                  format: uuid
       responses:
         '202':
           description: Script cue generation queued.
@@ -214,6 +226,20 @@ paths:
       - $ref: '#/components/parameters/CardId'
     post:
       operationId: startCardCueGeneration
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [replace_manual, operation_id]
+              properties:
+                replace_manual:
+                  type: boolean
+                operation_id:
+                  type: string
+                  format: uuid
       responses:
         '202':
           description: Card cue generation queued.

@@ -10,10 +10,14 @@ class StartScriptCueGeneration
 {
     public function __construct(private readonly CreateCueGeneration $create) {}
 
-    public function handle(User $user, Script $script): AiGeneration
+    public function handle(User $user, Script $script, ?string $operationId = null): AiGeneration
     {
-        $cards = $script->cards()->whereNull('deleted_at')->with('cueSet')->get();
+        $cards = $script->cards()
+            ->whereNull('deleted_at')
+            ->whereHas('cueSet', fn ($query) => $query->where('manually_edited', false))
+            ->with('cueSet')
+            ->get();
 
-        return $this->create->handle($user, $script, $cards);
+        return $this->create->handle($user, $script, $cards, operationId: $operationId);
     }
 }

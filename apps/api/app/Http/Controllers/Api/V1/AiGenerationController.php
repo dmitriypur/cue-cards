@@ -17,13 +17,29 @@ class AiGenerationController extends Controller
 {
     public function startScript(Request $request, Script $script, StartScriptCueGeneration $start): JsonResponse
     {
-        return (new AiGenerationResource($start->handle($request->user(), $script)))
+        $validated = $request->validate(['operation_id' => ['sometimes', 'uuid']]);
+
+        return (new AiGenerationResource($start->handle(
+            $request->user(),
+            $script,
+            $validated['operation_id'] ?? null,
+        )))
             ->response()->setStatusCode(202);
     }
 
     public function startCard(Request $request, Card $card, StartCardCueGeneration $start): JsonResponse
     {
-        return (new AiGenerationResource($start->handle($request->user(), $card)))
+        $validated = $request->validate([
+            'replace_manual' => ['sometimes', 'boolean'],
+            'operation_id' => ['sometimes', 'uuid'],
+        ]);
+
+        return (new AiGenerationResource($start->handle(
+            $request->user(),
+            $card,
+            (bool) ($validated['replace_manual'] ?? false),
+            $validated['operation_id'] ?? null,
+        )))
             ->response()->setStatusCode(202);
     }
 

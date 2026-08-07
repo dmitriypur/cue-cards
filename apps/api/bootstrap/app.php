@@ -1,5 +1,6 @@
 <?php
 
+use App\Application\AiAssistance\FeatureNotAvailable;
 use App\Application\Sync\InvalidSyncCommand;
 use App\Application\Sync\SyncConflict;
 use App\Domain\Scripts\InvalidScriptSnapshot;
@@ -95,6 +96,18 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (AuthorizationException $exception, Request $request) use ($notFound): ?JsonResponse {
             return $request->is('api/*') ? $notFound($request) : null;
+        });
+
+        $exceptions->render(function (FeatureNotAvailable $exception, Request $request): ?JsonResponse {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json(['error' => [
+                'code' => 'FEATURE_NOT_AVAILABLE',
+                'message' => 'Функция недоступна для этого аккаунта.',
+                'correlation_id' => $request->header('X-Correlation-ID', (string) Str::uuid()),
+            ]], 403);
         });
 
         $exceptions->render(function (ModelNotFoundException $exception, Request $request) use ($notFound): ?JsonResponse {

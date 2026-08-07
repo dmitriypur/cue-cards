@@ -30,6 +30,17 @@ npm run cap:sync
 
 Set `JAVA_HOME` and `ANDROID_HOME` to the local JDK 21 and Android SDK locations before using Gradle. Keep API keys and signing material only in ignored local environment files.
 
+## AI queue
+
+AI cue generation uses the Laravel database queue. Configure `DEEPSEEK_API_KEY`, optional `DEEPSEEK_URL`, and `CUE_CARDS_AI_MODEL` only in the server `.env`, then run the dedicated worker:
+
+```bash
+cd apps/api
+php artisan queue:work --queue=ai --tries=3 --timeout=100 --sleep=1
+```
+
+In production, supervise that exact command with the process working directory set to `apps/api`, automatic restart enabled, and graceful restarts performed with `php artisan queue:restart`. Redis and Horizon are not required for the MVP.
+
 ## Verification
 
 ```bash
@@ -47,4 +58,4 @@ cd android
 ./gradlew testDebugUnitTest assembleDebug
 ```
 
-End-to-end tests are available through `npm run test:e2e` once Task 13 adds browser journeys. The canonical API contract and generated client are added in later numbered tasks.
+End-to-end tests are available through `npm run test:e2e` once Task 13 adds browser journeys. The canonical API contract is `docs/api/openapi.yaml`; regenerate the committed mobile transport types with `npm run contract:generate` from `apps/mobile`.

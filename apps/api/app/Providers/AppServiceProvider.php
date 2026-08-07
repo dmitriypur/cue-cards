@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Application\AiAssistance\CueGenerator;
+use App\Infrastructure\Ai\LaravelAiCueGenerator;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -14,7 +16,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(CueGenerator::class, LaravelAiCueGenerator::class);
     }
 
     /**
@@ -23,5 +25,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         RateLimiter::for('sync', static fn (Request $request) => Limit::perMinute(60)->by((string) $request->user()?->id));
+        RateLimiter::for('ai-generation', static fn (Request $request) => Limit::perMinute(10)->by((string) $request->user()?->id));
+        RateLimiter::for('ai-generation-status', static fn (Request $request) => Limit::perMinute(120)->by((string) $request->user()?->id));
     }
 }

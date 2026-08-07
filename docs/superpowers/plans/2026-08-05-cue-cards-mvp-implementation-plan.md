@@ -545,22 +545,22 @@ return this.unitOfWork.run(async (tx) => {
 - Produces `ResolveConflict.useServer(conflictId: string): Promise<void>` and `duplicateLocal(conflictId: string): Promise<string>`.
 - Consumes `Connectivity.current(): Promise<boolean>` and `subscribe(listener: (online: boolean) => void): Unsubscribe`.
 
-- [ ] Write `RunSync.test.ts` first for offline no-op, FIFO upload, acknowledgement only after server acceptance, cursor download, duplicate operation acceptance, exponential retry metadata, token expiry, and app restart with a persisted outbox.
-- [ ] Add an offline-edit test where five saves of one aggregate collapse to one pending command; add an in-flight race test where a sixth save creates one pending successor and rebases it to the acknowledged server version before upload.
-- [ ] Add a race test where local text changes while an older remote AI result downloads; the older result must not replace the current full text or fresh cue state.
-- [ ] Run `npm run test:unit -- RunSync`; expected failure: gateway, action, and sync state are absent.
-- [ ] Implement `HttpSyncGateway` from generated OpenAPI types and `RunSync` with one process-wide mutex so startup, connectivity, and manual triggers cannot overlap.
-- [ ] Upload at most one command per aggregate at a time. After acknowledgement, update the local aggregate server version and rebase its pending successor in the same SQLite transaction before selecting the next command.
-- [ ] Apply downloads inside SQLite transactions and persist the cursor only after every change in the page succeeds.
-- [ ] Use bounded retry delays of 2, 5, 15, 30, and 60 seconds with jitter; stop automatic retry on 401 or 409 and expose an explicit state to the UI.
-- [ ] Write conflict use-case tests first: accepting server replaces local aggregate and clears its conflicting command; duplicating local assigns new UUIDv7 IDs to script/cards/cue sets, resets versions, and enqueues the duplicate without losing either copy.
-- [ ] Run `npm run test:unit -- ResolveConflict`; expected failure: conflict repository/actions are absent.
-- [ ] Implement persistent conflict records in SQLite by adding migration `002_sync_conflicts.ts`; store both snapshots and never silently pick a winner.
-- [ ] Write the conflict component test first for side-by-side titles/update times, clear Server copy and Save local as copy actions, and navigation back to both resulting scripts.
-- [ ] Implement the conflict view and global sync banner with `offline`, `syncing`, `up-to-date`, `retrying`, `auth-required`, and `conflict` states.
-- [ ] Subscribe on app bootstrap to Capacitor Network and App resume, but make all triggers call the same `RunSync` action.
-- [ ] Run focused sync tests, complete mobile suite, typecheck, build, and an Android offline/online smoke run.
-- [ ] Update the development log and commit: `feat(mobile): synchronize offline changes and surface conflicts`.
+- [x] Write `RunSync.test.ts` first for offline no-op, FIFO upload, acknowledgement only after server acceptance, cursor download, duplicate operation acceptance, exponential retry metadata, token expiry, and app restart with a persisted outbox.
+- [x] Add an offline-edit test where five saves of one aggregate collapse to one pending command; add an in-flight race test where a sixth save creates one pending successor and rebases it to the acknowledged server version before upload.
+- [x] Add a race test where local text changes while an older remote AI result downloads; the older result must not replace the current full text or fresh cue state.
+- [x] Run `npm run test:unit -- RunSync`; expected failure: gateway, action, and sync state are absent.
+- [x] Implement `HttpSyncGateway` from generated OpenAPI types and `RunSync` with one process-wide mutex so startup, connectivity, and manual triggers cannot overlap.
+- [x] Upload at most one command per aggregate at a time. After acknowledgement, update the local aggregate server version and rebase its pending successor in the same SQLite transaction before selecting the next command.
+- [x] Apply downloads inside SQLite transactions and persist the cursor only after every change in the page succeeds.
+- [x] Use bounded retry delays of 2, 5, 15, 30, and 60 seconds with jitter; stop automatic retry on 401 or 409 and expose an explicit state to the UI.
+- [x] Write conflict use-case tests first: accepting server replaces local aggregate and clears its conflicting command; duplicating local assigns new UUIDv7 IDs to script/cards/cue sets, resets versions, and enqueues the duplicate without losing either copy.
+- [x] Run `npm run test:unit -- ResolveConflict`; expected failure: conflict repository/actions are absent.
+- [x] Implement persistent conflict records in SQLite by adding migration `002_sync_conflicts.ts`; store both snapshots and never silently pick a winner.
+- [x] Write the conflict component test first for side-by-side titles/update times, clear Server copy and Save local as copy actions, and navigation back to both resulting scripts.
+- [x] Implement the conflict view and global sync banner with `offline`, `syncing`, `up-to-date`, `retrying`, `auth-required`, and `conflict` states.
+- [x] Subscribe on app bootstrap to Capacitor Network and App resume, but make all triggers call the same `RunSync` action.
+- [x] Run focused sync tests, complete mobile suite, typecheck, build, and an Android offline/online smoke run.
+- [x] Update the development log and commit: `feat(mobile): synchronize offline changes and surface conflicts`.
 
 ## Task 11: Generate structured AI cues, account usage, and preserve source text
 
@@ -597,11 +597,11 @@ return this.unitOfWork.run(async (tx) => {
 - Produces `POST /api/v1/scripts/{script}/cue-generations`, `POST /api/v1/cards/{card}/cue-generations`, and `GET /api/v1/ai-generations/{generation}`.
 - Consumes Laravel AI SDK `Agent`, `HasStructuredOutput`, `Promptable`, `Lab::DeepSeek`, and Laravel Queue.
 
-- [ ] Add `ai_generations` with UUID, user/script/card IDs, provider, model, prompt version, source hashes, status, attempts, provider request ID, input/output tokens, nullable cost minor units, normalized safe error fields, and timing columns.
-- [ ] Write `CueGenerationResultTest` first: every expected card appears exactly once, unknown IDs are rejected, each card has 3–5 trimmed strings, duplicates/overlong cues are rejected, and source hashes are mandatory.
-- [ ] Run `php artisan test --filter=CueGenerationResultTest`; expected failure: request/result value objects are missing.
-- [ ] Implement immutable request/result objects and the `CueGenerator` port before importing Laravel AI SDK anywhere outside `Infrastructure/Ai`.
-- [ ] Create `CueCardsAgent` implementing `Agent` and `HasStructuredOutput`; define an array-of-objects schema with `card_id` and `cues`, and instructions requiring concise Russian prompts that summarize only the provided source.
+- [x] Add `ai_generations` with UUID, user/script/card IDs, provider, model, prompt version, source hashes, status, attempts, provider request ID, input/output tokens, nullable cost minor units, normalized safe error fields, and timing columns.
+- [x] Write `CueGenerationResultTest` first: every expected card appears exactly once, unknown IDs are rejected, each card has 3–5 trimmed strings, duplicates/overlong cues are rejected, and source hashes are mandatory.
+- [x] Run `php artisan test --filter=CueGenerationResultTest`; expected failure: request/result value objects are missing.
+- [x] Implement immutable request/result objects and the `CueGenerator` port before importing Laravel AI SDK anywhere outside `Infrastructure/Ai`.
+- [x] Create `CueCardsAgent` implementing `Agent` and `HasStructuredOutput`; define an array-of-objects schema with `card_id` and `cues`, and instructions requiring concise Russian prompts that summarize only the provided source.
 
 ```php
 public function schema(JsonSchema $schema): array
@@ -617,20 +617,20 @@ public function schema(JsonSchema $schema): array
 }
 ```
 
-- [ ] Implement `LaravelAiCueGenerator` using `(new CueCardsAgent)->prompt($prompt, provider: Lab::DeepSeek, model: config('cue-cards.ai.model'), timeout: 90)` and convert the array-like structured response into the validated domain result.
-- [ ] Put `DEEPSEEK_API_KEY`, optional `DEEPSEEK_URL`, `CUE_CARDS_AI_MODEL`, maximum prompt bytes, maximum cue length, and prompt version in server configuration only.
-- [ ] Write API tests first: owner/superadmin can start generation, another user gets 404, full entitlement bypasses commercial quota, technical rate limiting still applies, and no AI key/model secret appears in the response.
-- [ ] Run `php artisan test --filter=AiGenerationApiTest`; expected failure: actions, endpoints, and queue dispatch are absent.
-- [ ] Implement start actions, policies, endpoints, and queue dispatch. Mark selected cue sets `pending` in the same transaction as the generation row.
-- [ ] Write queue integration tests first with a fake `CueGenerator`: success, deterministic batching, three attempts with backoff, final failure, content changed during generation, manually edited cues, token accounting, and provider exception sanitization.
-- [ ] Run `php artisan test --filter=GenerateScriptCuesTest`; expected failure: job/completion action/usage recorder are absent.
-- [ ] Implement `GenerateScriptCues` with `$tries = 3`, explicit backoff, correlation/generation IDs, safe exception mapping, and delegation to `CompleteCueGeneration`.
-- [ ] In `CompleteCueGeneration`, update a cue set only when its current content hash equals the captured source hash and it was not manually edited; otherwise preserve cues and mark stale. Never write `cards.full_text` from an AI result.
-- [ ] Commit accepted cue changes, one script aggregate version increment, and one `sync_changes` snapshot in the same server transaction so mobile clients receive AI results through the ordinary change feed.
-- [ ] Record usage for every completed or failed provider call, including superadmin calls. Do not decrement or check a commercial quota for superadmin.
-- [ ] Add database-queue migrations/configuration, run the worker with `php artisan queue:work --queue=ai --tries=3`, and document the production supervisor command without adding Redis.
-- [ ] Update OpenAPI and generated mobile types, then run all AI/API tests, full API suite, Pint, PostgreSQL CI, and contract drift check.
-- [ ] Update the development log and commit: `feat(api): generate and meter structured AI cues`.
+- [x] Implement `LaravelAiCueGenerator` using `(new CueCardsAgent)->prompt($prompt, provider: Lab::DeepSeek, model: config('cue-cards.ai.model'), timeout: 90)` and convert the array-like structured response into the validated domain result.
+- [x] Put `DEEPSEEK_API_KEY`, optional `DEEPSEEK_URL`, `CUE_CARDS_AI_MODEL`, maximum prompt bytes, maximum cue length, and prompt version in server configuration only.
+- [x] Write API tests first: owner/superadmin can start generation, another user gets 404, full entitlement bypasses commercial quota, technical rate limiting still applies, and no AI key/model secret appears in the response.
+- [x] Run `php artisan test --filter=AiGenerationApiTest`; expected failure: actions, endpoints, and queue dispatch are absent.
+- [x] Implement start actions, policies, endpoints, and queue dispatch. Mark selected cue sets `pending` in the same transaction as the generation row.
+- [x] Write queue integration tests first with a fake `CueGenerator`: success, deterministic batching, three attempts with backoff, final failure, content changed during generation, manually edited cues, token accounting, and provider exception sanitization.
+- [x] Run `php artisan test --filter=GenerateScriptCuesTest`; expected failure: job/completion action/usage recorder are absent.
+- [x] Implement `GenerateScriptCues` with `$tries = 3`, explicit backoff, correlation/generation IDs, safe exception mapping, and delegation to `CompleteCueGeneration`.
+- [x] In `CompleteCueGeneration`, update a cue set only when its current content hash equals the captured source hash and it was not manually edited; otherwise preserve cues and mark stale. Never write `cards.full_text` from an AI result.
+- [x] Commit accepted cue changes, one script aggregate version increment, and one `sync_changes` snapshot in the same server transaction so mobile clients receive AI results through the ordinary change feed.
+- [x] Record usage for every completed or failed provider call, including superadmin calls. Do not decrement or check a commercial quota for superadmin.
+- [x] Add database-queue migrations/configuration, run the worker with `php artisan queue:work --queue=ai --tries=3`, and document the production supervisor command without adding Redis.
+- [x] Update OpenAPI and generated mobile types, then run all AI/API tests, full API suite, Pint, PostgreSQL CI, and contract drift check.
+- [x] Update the development log and commit: `feat(api): generate and meter structured AI cues`.
 
 ## Task 12: Expose AI generation and editable cues in the mobile workflow
 

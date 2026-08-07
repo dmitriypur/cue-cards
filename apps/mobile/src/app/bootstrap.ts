@@ -84,6 +84,16 @@ import { SqliteAiGenerationRequestRepository } from '@/infrastructure/sqlite/Sql
 import { SqliteRecordingSessionRepository } from '@/infrastructure/sqlite/SqliteRecordingSessionRepository'
 import { SqliteScriptRepository } from '@/infrastructure/sqlite/SqliteScriptRepository'
 import { SqliteSyncStateRepository } from '@/infrastructure/sqlite/SqliteSyncStateRepository'
+import { BrowserOutboxRepository } from '@/infrastructure/memory/BrowserOutboxRepository'
+import { BrowserScriptRepository } from '@/infrastructure/memory/BrowserScriptRepository'
+import { MemorySqlDriver } from '@/infrastructure/memory/MemorySqlDriver'
+import { BrowserSourceFilePicker } from '@/infrastructure/browser/BrowserSourceFilePicker'
+import { NoopWakeLock } from '@/infrastructure/browser/NoopWakeLock'
+import { BrowserAiCuesDependencies } from '@/infrastructure/browser/BrowserAiCuesDependencies'
+import { BrowserRecordingSessionRepository } from '@/infrastructure/memory/BrowserRecordingSessionRepository'
+import { BrowserConflictRepository } from '@/infrastructure/memory/BrowserConflictRepository'
+import { BrowserSyncStateRepository } from '@/infrastructure/memory/BrowserSyncStateRepository'
+import { BrowserConnectivity } from '@/infrastructure/browser/BrowserConnectivity'
 
 export async function bootstrapApp(): Promise<void> {
   const pinia = createPinia()
@@ -251,6 +261,84 @@ export async function bootstrapApp(): Promise<void> {
       if (isActive) void syncAndResume('connectivity')
     })
     void syncAndResume('startup')
+  } else if (import.meta.env.VITE_E2E_MODE === 'true') {
+    const scripts = new BrowserScriptRepository()
+    const outbox = new BrowserOutboxRepository(scripts)
+    const unitOfWork = new LocalUnitOfWork(new MemorySqlDriver())
+    const clock = { now: () => new Date().toISOString() }
+    const saveAggregate = new SaveScriptAggregate(
+      scripts,
+      outbox,
+      unitOfWork,
+      clock,
+      uuidv7,
+      () => {
+        if (runSync !== null) void syncStore.run(runSync, 'connectivity')
+      },
+    )
+    const saveDraft = new SaveImportDraft(saveAggregate, uuidv7, clock)
+    const sessions = new BrowserRecordingSessionRepository()
+    const conflicts = new BrowserConflictRepository()
+    importWorkflow = new ImportWorkflow(
+      new BrowserSourceFilePicker(),
+      new ParseSourceDocument(),
+      saveDraft,
+    )
+    libraryDependencies = {
+      listScripts: new ListScripts(scripts),
+      getScript: new GetScript(scripts, saveAggregate),
+      deleteScript: new DeleteScript(scripts, saveAggregate),
+      isOnline: () => navigator.onLine,
+    }
+    editorDependencies = {
+      getScript: new GetScript(scripts, saveAggregate),
+      updateCard: new UpdateCard(scripts, saveAggregate, clock),
+      reorderCards: new ReorderCards(scripts, saveAggregate, clock),
+      splitCard: new SplitCard(scripts, saveAggregate, clock),
+      mergeCards: new MergeCards(scripts, saveAggregate, clock),
+      updateCues: new UpdateCues(scripts, saveAggregate, clock),
+      onAppBackground: () => () => undefined,
+    }
+    const wakeLock = new NoopWakeLock()
+    recordingDependencies = {
+      loadScript: new GetScript(scripts, saveAggregate),
+      loadSession: async (scriptId) => sessions.get(scriptId),
+      startRecording: new StartRecording(scripts, sessions, wakeLock, clock),
+      moveRecordingCursor: new MoveRecordingCursor(scripts, sessions, wakeLock, clock),
+      updateRecordingDisplay: new UpdateRecordingDisplay(sessions, clock),
+      finishRecording: new FinishRecording(sessions, wakeLock),
+      wakeLock,
+      onAppStateChange: () => () => undefined,
+      openLibrary: async () => { await appRouter.push('/library') },
+    }
+    aiCuesDependencies = new BrowserAiCuesDependencies(scripts, saveAggregate, clock.now, uuidv7)
+    const connectivity = new BrowserConnectivity()
+    const syncState = new BrowserSyncStateRepository()
+    const gateway = new HttpSyncGateway(api)
+    const applyRemoteChanges = new ApplyRemoteChanges(scripts, outbox, syncState, unitOfWork)
+    const recordConflict = new RecordSyncConflict(conflicts, scripts, unitOfWork, uuidv7, clock)
+    runSync = new RunSync(
+      connectivity,
+      gateway,
+      scripts,
+      outbox,
+      syncState,
+      applyRemoteChanges,
+      recordConflict,
+    )
+    syncDependencies = {
+      conflicts,
+      resolveConflict: new ResolveConflict(scripts, outbox, conflicts, unitOfWork, uuidv7, clock),
+      runSync,
+    }
+    const activeRunSync = runSync
+    connectivity.subscribe((online) => {
+      if (!online) {
+        syncStore.state = 'offline'
+        return
+      }
+      void syncStore.run(activeRunSync, 'connectivity')
+    })
   }
 
   const app = createApp(App)

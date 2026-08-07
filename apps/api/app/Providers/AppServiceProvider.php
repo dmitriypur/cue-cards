@@ -24,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('login', static fn (Request $request) => Limit::perMinute(5)->by('login:'.$request->ip()));
         RateLimiter::for('sync', static fn (Request $request) => Limit::perMinute(60)->by((string) $request->user()?->id));
         RateLimiter::for('ai-generation', static fn (Request $request) => Limit::perMinute(10)->by((string) $request->user()?->id));
         RateLimiter::for('ai-generation-status', static fn (Request $request) => Limit::perMinute(120)->by((string) $request->user()?->id));

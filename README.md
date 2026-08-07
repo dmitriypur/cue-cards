@@ -58,4 +58,4 @@ cd android
 ./gradlew testDebugUnitTest assembleDebug
 ```
 
-End-to-end tests are available through `npm run test:e2e` once Task 13 adds browser journeys. The canonical API contract is `docs/api/openapi.yaml`; regenerate the committed mobile transport types with `npm run contract:generate` from `apps/mobile`.
+End-to-end browser journeys run through `npm run test:e2e`. The canonical API contract is `docs/api/openapi.yaml`; regenerate the committed mobile transport types with `npm run contract:generate` from `apps/mobile`.

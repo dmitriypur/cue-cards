@@ -17,6 +17,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use InvalidArgumentException;
+use RuntimeException;
 use Throwable;
 
 class GenerateScriptCues implements ShouldQueue
@@ -66,10 +67,10 @@ class GenerateScriptCues implements ShouldQueue
         foreach ($this->batches($requestCards) as $batch) {
             try {
                 $result = $generator->generate(CueGenerationRequest::fromCards($batch));
-            } catch (Throwable $exception) {
+            } catch (Throwable) {
                 $usage->failed($generation);
 
-                throw $exception;
+                throw new RuntimeException('AI provider request failed.');
             }
             $usage->handle($generation, $result);
             foreach ($result->cards() as $card) {

@@ -125,6 +125,9 @@ class GenerateScriptCuesTest extends TestCase
         $job->failed($last ?? new RuntimeException('missing exception'));
 
         $generation->refresh();
+        $this->assertNotNull($last);
+        $this->assertStringNotContainsString($sentinel, $last->getMessage());
+        $this->assertSame('AI provider request failed.', $last->getMessage());
         $this->assertSame('failed', $generation->status->value);
         $this->assertSame(3, $generation->attempts);
         $this->assertSame(3, $generation->provider_calls);

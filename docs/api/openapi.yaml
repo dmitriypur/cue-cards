@@ -105,6 +105,7 @@ paths:
                   updated_at: '2026-08-06T12:05:00+00:00'
                   cards:
                     - id: 0198a70e-23a2-73df-8387-34636552833a
+                      script_id: 0198a70d-a717-70ae-a41d-905a2237bd18
                       position: 0
                       title: Хук
                       full_text: Короткий исходный текст.
@@ -112,6 +113,7 @@ paths:
                       version: 2
                       cue_set:
                         id: 0198a70e-5670-704a-86bb-ced23df0704f
+                        card_id: 0198a70e-23a2-73df-8387-34636552833a
                         cues:
                           - Обозначить проблему
                           - Дать обещание
@@ -424,9 +426,12 @@ components:
     CardSnapshot:
       type: object
       additionalProperties: false
-      required: [id, position, title, full_text, content_hash, version, cue_set]
+      required: [id, script_id, position, title, full_text, content_hash, version, cue_set]
       properties:
         id:
+          type: string
+          format: uuid
+        script_id:
           type: string
           format: uuid
         position:
@@ -452,9 +457,12 @@ components:
     CueSetSnapshot:
       type: object
       additionalProperties: false
-      required: [id, cues, source_hash, status, generation_id, manually_edited, version]
+      required: [id, card_id, cues, source_hash, status, generation_id, manually_edited, version]
       properties:
         id:
+          type: string
+          format: uuid
+        card_id:
           type: string
           format: uuid
         cues:
@@ -464,6 +472,7 @@ components:
           items:
             type: string
             minLength: 1
+            maxLength: 200
         source_hash:
           type: string
           pattern: '^[a-f0-9]{64}$'

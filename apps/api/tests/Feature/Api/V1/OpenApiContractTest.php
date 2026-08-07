@@ -77,6 +77,17 @@ class OpenApiContractTest extends TestCase
         yield 'script' => ['/api/v1/scripts/{script}', 'get', '200'];
     }
 
+    public function test_sync_snapshot_relationship_ids_are_part_of_the_transport_contract(): void
+    {
+        $schemas = $this->document()['components']['schemas'];
+
+        $this->assertContains('script_id', $schemas['CardSnapshot']['required']);
+        $this->assertSame('uuid', $schemas['CardSnapshot']['properties']['script_id']['format']);
+        $this->assertContains('card_id', $schemas['CueSetSnapshot']['required']);
+        $this->assertSame('uuid', $schemas['CueSetSnapshot']['properties']['card_id']['format']);
+        $this->assertSame(200, $schemas['CueSetSnapshot']['properties']['cues']['items']['maxLength']);
+    }
+
     /** @return array<string, mixed> */
     private function document(): array
     {

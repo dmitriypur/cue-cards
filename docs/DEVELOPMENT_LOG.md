@@ -122,3 +122,19 @@
 - Contract/native verification: deterministic `npm run contract:generate`, `npm run cap:sync`, and `env JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ANDROID_HOME=/opt/homebrew/share/android-commandlinetools ./gradlew testDebugUnitTest assembleDebug` passed; Gradle reported 297 actionable tasks (29 executed, 268 up-to-date) and only the two unchanged `flatDir` warnings.
 - PostgreSQL 16 contract/auth parity remains covered by the existing CI job; no local PostgreSQL server or Docker daemon was used for this task.
 - Task 008 is complete. Task 009 was not started.
+
+## 2026-08-07 — Task 009: idempotent Laravel synchronization
+
+- Confirmed Tasks 001–008 from Git history, task checkpoints, and this development log before continuing Task 009 on `codex/task-009-sync` from `main` at `6fe233c`.
+- Added immutable script snapshot/content-hash validation, transactional ordered snapshot application, atomic operation claims for exact retry idempotency, optimistic version conflicts preserving both snapshots, soft deletes, and a per-user cursor change feed.
+- Added portable operation/change-feed migrations and a forward migration replacing the physical `(script_id, position)` unique constraint with an index; active positions remain domain-validated while deleted card tombstones can retain a position reused by an active card.
+- Added bounded batches/snapshots/pages, per-user rate limiting, correlation IDs, stable validation/conflict envelopes, ownership checks for nested card/cue UUIDs, and allowlisted sync logs containing no script text or secrets.
+- Review RED regressions reproduced nested UUID takeover, malformed domain payload 500s, mobile-delete incompatibility, tombstone position conflicts, overlong cues, permissive timestamps, OpenAPI relationship-ID drift, and the concurrent exact-retry race. The focused GREEN paths now pass on SQLite; the PostgreSQL race test uses two synchronized processes.
+- OpenAPI now includes `script_id`/`card_id` and a 200-character cue maximum. `npm run contract:generate` is deterministic at Git object hash `2c697895ac999cce999cc673d397933859a55fe9` and generated TypeScript is committed with the contract change.
+- Pre-review PostgreSQL verification used a disposable local cluster and passed 52 tests/454 assertions. The dedicated concurrent PostgreSQL test then reproduced the pre-fix race as RED. The first post-fix full run exposed test-state leakage from that non-transactional race test; a scoped teardown fixed the test isolation rather than changing production behavior.
+- Final PostgreSQL verification: the disposable-cluster `php artisan test` run passed 64 tests/493 assertions, including the two-process concurrent exact-retry test; the cluster was stopped and removed afterward.
+- Final SQLite API verification: `php artisan test` passed 64 tests with 63 passed, 1 PostgreSQL-only skipped, and 486 assertions; `./vendor/bin/pint --test` passed.
+- Final mobile verification: `npm run test:unit` passed 106 tests in 27 files; `npm run typecheck`, `npm run build`, and `npm run test:e2e` exited successfully. The existing Node experimental SQLite warning remains unchanged.
+- Final contract/native verification: deterministic `npm run contract:generate` retained Git object hash `2c697895ac999cce999cc673d397933859a55fe9`; `npm run cap:sync` passed; `env JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ANDROID_HOME=/opt/homebrew/share/android-commandlinetools ./gradlew testDebugUnitTest assembleDebug` completed successfully with 297 actionable tasks (26 executed, 271 up-to-date) and only the two unchanged `flatDir` warnings.
+- Independent final review found no remaining Critical or Important code issues after the regression fixes.
+- Task 009 is complete. Task 010 was not started.

@@ -1,5 +1,9 @@
 <?php
 
+use App\Application\Sync\InvalidSyncCommand;
+use App\Application\Sync\SyncConflict;
+use App\Domain\Scripts\InvalidScriptSnapshot;
+use App\Http\Middleware\CorrelationId;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -22,9 +26,30 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->api(append: [CorrelationId::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $invalidSyncPayload = static function (Request $request): JsonResponse {
+            return response()->json(['error' => [
+                'code' => 'VALIDATION_FAILED',
+                'message' => 'Проверьте данные синхронизации.',
+                'correlation_id' => $request->header('X-Correlation-ID', (string) Str::uuid()),
+                'fields' => ['commands' => ['Snapshot is invalid.']],
+            ]], 422);
+        };
+        $exceptions->render(function (InvalidScriptSnapshot $exception, Request $request) use ($invalidSyncPayload): JsonResponse {
+            return $invalidSyncPayload($request);
+        });
+        $exceptions->render(function (InvalidSyncCommand $exception, Request $request) use ($invalidSyncPayload): JsonResponse {
+            return $invalidSyncPayload($request);
+        });
+        $exceptions->render(function (SyncConflict $exception, Request $request): JsonResponse {
+            return response()->json(['error' => [
+                'code' => 'SYNC_VERSION_CONFLICT', 'message' => 'Сценарий изменён на сервере.',
+                'correlation_id' => $request->header('X-Correlation-ID', (string) Str::uuid()),
+                'conflict' => ['aggregate_id' => $exception->aggregateId, 'local' => $exception->local->toArray(), 'server' => $exception->server->toArray()],
+            ]], 409);
+        });
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );

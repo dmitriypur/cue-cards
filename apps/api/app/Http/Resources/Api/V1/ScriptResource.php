@@ -24,6 +24,7 @@ class ScriptResource extends JsonResource
             'cards' => $this->resource->cards->map(
                 static fn (Card $card): array => [
                     'id' => $card->id,
+                    'script_id' => $card->script_id,
                     'position' => $card->position,
                     'title' => $card->title,
                     'full_text' => $card->full_text,
@@ -31,6 +32,7 @@ class ScriptResource extends JsonResource
                     'version' => $card->version,
                     'cue_set' => $card->cueSet ? [
                         'id' => $card->cueSet->id,
+                        'card_id' => $card->cueSet->card_id,
                         'cues' => $card->cueSet->cues,
                         'source_hash' => $card->cueSet->source_hash,
                         'status' => $card->cueSet->status,

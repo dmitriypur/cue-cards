@@ -27,6 +27,7 @@ key.properties
 *.db
 
 # Local tooling
+.worktrees/
 .idea/
 *.iml
 .phpunit.result.cache

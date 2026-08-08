@@ -202,3 +202,14 @@
 - Final branch API verification: SQLite passed 98 tests (97 passed, 1 PostgreSQL-only skipped), 678 assertions, and Pint; disposable PostgreSQL passed 98/98 with 685 assertions and was stopped and removed.
 - Final branch mobile verification: 197/197 tests in 39 files, typecheck, production build, deterministic contract generation/drift, and 3 Playwright journeys passed. Capacitor sync passed; Gradle `testDebugUnitTest assembleDebug` completed with 297 actionable tasks (26 executed, 271 up-to-date) and only unchanged `flatDir` warnings.
 - Task 013 is complete. Task 014 was not started.
+
+## 2026-08-08 — Task 014 planning: production API deployment
+
+- Reordered the remaining MVP work: production Laravel API deployment is now Task 014; the signed Android release moved to Task 015 and must consume the verified production HTTPS API URL.
+- Performed a read-only comparison against `/Users/dmitriypur/Desktop/LARAVEL_PROJECTS/entrepreneur-platform/.github/workflows/deploy.yml` and its live server deployment pattern. No Cue Cards code or production data was changed during the audit.
+- Confirmed the target server provides Ubuntu 24.04, PHP 8.3, PostgreSQL 16, Nginx, Certbot, Supervisor, required PHP modules, local-only PostgreSQL, sufficient MVP connection capacity, and a working GitHub SSH fetch/TLS health pattern.
+- Found no configured application PostgreSQL backup/restore automation or off-server restore evidence. Task 014 is blocked from its first production migration until backup retention and a separate restore drill are established.
+- Recorded security/operations follow-ups: root SSH and password authentication are enabled, Laravel/worker log rotation needs explicit bounds, and Nginx has an unrelated duplicate `www.cartocrimea.ru` HTTP declaration while still passing `nginx -t`.
+- With explicit operator authorization, removed the obsolete `services-worker` from active Supervisor configuration by moving `/etc/supervisor/conf.d/services-worker.conf` to `.disabled`; its referenced `/var/www/services_master` did not exist. Existing application workers remained running.
+- The Cue Cards repository has no Git remote. Before Task 014 implementation mutates production, the operator must confirm the API domain, GitHub repository/remote and Actions settings, DeepSeek credential handling, off-server backup target/retention, secure superadmin bootstrap values, and deploy-user choice.
+- Created `docs/tasks/014-current-task.md` as the active handoff checkpoint. Task 014 implementation and Task 015 were not started.

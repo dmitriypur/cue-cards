@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Deliver a signed, sideloadable Android APK that imports a YouTube script from Markdown or TXT, stores it offline as editable cards, generates 3–5 AI cues per card through Laravel/DeepSeek, synchronizes safely, and gives the creator-superadmin unrestricted product access.
+**Goal:** Deploy the Laravel API and deliver a signed, sideloadable Android APK that imports a YouTube script from Markdown or TXT, stores it offline as editable cards, generates 3–5 AI cues per card through Laravel/DeepSeek, synchronizes safely, and gives the creator-superadmin unrestricted product access.
 
 **Architecture:** A monorepo contains a Laravel modular-monolith JSON API and a separately packaged Vue/Capacitor offline-first client. The mobile application commits all edits to SQLite and records an outbox command before networking; Laravel applies aggregate snapshots transactionally with idempotency and optimistic locking. AI, secure storage, SQLite, file picking, wake lock, and HTTP are adapters behind application ports.
 
@@ -66,10 +66,10 @@ TypeScript was corrected to 5.9.3 during Task 1 verification: TypeScript 7.0.2 u
 
 - `AGENTS.md`: immutable product and engineering rules.
 - `README.md`: local setup, daily commands, and high-level architecture.
-- `.github/workflows/ci.yml`: API, mobile, contract, and Android quality gates.
+- `.github/workflows/ci.yml`: API, mobile, contract, Android quality gates, and production API auto-deploy.
 - `docs/api/openapi.yaml`: canonical `/api/v1` transport contract.
 - `docs/IMPLEMENTATION_PLAN.md`: phase summary.
-- `docs/tasks/001-current-task.md`: current execution checkpoint.
+- `docs/tasks/NNN-current-task.md`: one numbered execution checkpoint per task; the highest incomplete task is active.
 - `docs/DEVELOPMENT_LOG.md`: dated verification evidence and decisions.
 
 ### Laravel API
@@ -709,7 +709,60 @@ public function schema(JsonSchema $schema): array
 - [x] Run the exact clean verification matrix documented in README and record commands, counts, and outcomes in the development log.
 - [x] Commit: `test: harden end-to-end offline and privacy behavior`.
 
-## Task 14: Produce and verify the signed Android release APK
+## Task 14: Deploy and verify the production Laravel API
+
+**Reference environment:**
+
+- Existing deployment pattern: `/Users/dmitriypur/Desktop/LARAVEL_PROJECTS/entrepreneur-platform/.github/workflows/deploy.yml`.
+- Audited server baseline on 2026-08-08: Ubuntu 24.04, PHP 8.3, PostgreSQL 16, Nginx, Certbot, Supervisor, and the required PHP extensions are available.
+- Recommended exact defaults pending operator confirmation: API domain `cue-cards.web-func.ru`, repository path `/var/www/cue-cards-api`, Laravel root `/var/www/cue-cards-api/apps/api`, runtime user/group `www-data`, PHP-FPM service `php8.3-fpm`.
+- The Cue Cards repository currently has no Git remote. Production deployment must not start until the GitHub repository/remote, API domain, backup destination, AI credential reuse, and superadmin bootstrap values are confirmed through a secure channel.
+
+**Files:**
+
+- Modify: `.github/workflows/ci.yml`
+- Create: `scripts/deploy/verify-api-runtime-permissions.sh`
+- Create: `scripts/deploy/tests/verify-api-runtime-permissions-test.sh`
+- Create: `docs/API_DEPLOYMENT.md`
+- Modify: `docs/tasks/014-current-task.md`
+- Modify: `README.md`
+- Modify: `docs/DEVELOPMENT_LOG.md`
+
+**External configuration (never commit secrets):**
+
+- Create PostgreSQL database/user dedicated to Cue Cards.
+- Create `/var/www/cue-cards-api` with deploy-owner code and `.git`, plus runtime-write access only to `apps/api/storage` and `apps/api/bootstrap/cache`.
+- Create an Nginx HTTPS server block rooted at `/var/www/cue-cards-api/apps/api/public` and obtain a Certbot certificate for `cue-cards.web-func.ru` after DNS is confirmed.
+- Create `/etc/supervisor/conf.d/cue-cards-ai-worker.conf` running `/usr/bin/php8.3 /var/www/cue-cards-api/apps/api/artisan queue:work database --queue=ai --sleep=1 --tries=3 --timeout=100` as `www-data`.
+- Configure PostgreSQL backup retention and a tested restore drill before the first production migration; no production deployment is accepted with only same-disk unverified backups.
+- Configure bounded rotation for Laravel and worker logs.
+
+**Interfaces:**
+
+- Produces `https://cue-cards.web-func.ru/up` as the TLS-verified health endpoint and `/api/v1/*` as the production mobile API.
+- Produces GitHub auto-deploy from `main` only after the complete CI matrix succeeds.
+- Produces a supervised database-queue worker that consumes only queue `ai` with a 100-second worker timeout.
+- Consumes GitHub secrets `HOST`, `PORT`, `USERNAME`, `SSH_KEY`, `APP_DIR`, optional `RUNTIME_USER`, and optional `PHP_FPM_SERVICE`; consumes `API_BASE_URL` as a GitHub repository variable.
+- Consumes an untracked production `apps/api/.env` with `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL`, PostgreSQL credentials, database queue/cache/session settings, `DEEPSEEK_API_KEY`, and server-controlled superadmin bootstrap values.
+
+- [ ] Confirm the exact API domain, create/connect the GitHub repository and `origin`, approve reuse or replacement of the existing server-side DeepSeek key, provide superadmin bootstrap values securely, and select an off-server backup destination/retention policy.
+- [ ] Create branch/worktree `codex/task-014-production-api-deploy`; verify clean `main` at the Task 13 merge and update `docs/tasks/014-current-task.md` as each increment completes.
+- [ ] Write `scripts/deploy/tests/verify-api-runtime-permissions-test.sh` first for a deploy owner distinct from `www-data`, read-only code/`.env`, runtime-writable `storage` and `bootstrap/cache`, missing targets, and unsafe world/group write modes; run it and observe the missing verifier failure.
+- [ ] Implement `scripts/deploy/verify-api-runtime-permissions.sh` without printing environment contents or secrets; rerun the focused shell test to green.
+- [ ] Adapt the proven `entrepreneur-platform` GitHub Actions deployment into `.github/workflows/ci.yml`: deploy only a successful push to `main`, use `apps/api`, maintenance mode with an EXIT recovery trap, exact origin revision, production Composer install, environment preflight, migration status, `migrate --force`, Laravel caches, permissions verifier, queue restart, PHP-FPM restart, Nginx reload, and HTTPS health smoke.
+- [ ] Keep mobile/Android builds in GitHub Actions with Node 24; do not install or build the mobile client on the production server. Ensure deployment output never prints `.env`, database credentials, access tokens, AI keys, signing material, or user content.
+- [ ] Write `docs/API_DEPLOYMENT.md` with one-time DNS, GitHub variables/secrets, PostgreSQL role/database, production environment field names without secret values, Nginx/TLS, permissions, Supervisor, log rotation, backup/restore, deploy, smoke, and rollback procedures using exact non-secret paths.
+- [ ] Establish and verify an off-server PostgreSQL backup plus restore drill before schema deployment. Record only timestamps, database name, sizes, checksums, retention, and success status; never commit backup contents or credentials.
+- [ ] Provision the exact application directory, database role/database, production `.env`, Nginx TLS site, Supervisor worker, and log rotation. Validate configs before reload and preserve recoverable copies of replaced server files.
+- [ ] Run the complete local/CI API SQLite/PostgreSQL, Pint, mobile unit/type/build, OpenAPI drift, Playwright, Capacitor, and Android debug gates before the first production migration.
+- [ ] Trigger the first `main` auto-deploy; verify the deployed commit, `APP_ENV=production`, `APP_DEBUG=false`, migration status, writable runtime paths, `/up` over trusted TLS, stable error envelopes, and that no unintended public Laravel paths are exposed.
+- [ ] Seed the initial `superadmin` once using securely supplied values, then remove the bootstrap password from the persistent environment and rebuild config cache; verify login without printing credentials or tokens.
+- [ ] Submit one synthetic Cyrillic script through the production API, verify sync idempotency/conflict behavior, enqueue and complete one AI generation through the supervised `ai` worker, and inspect sanitized logs for absence of script text, bearer tokens, passwords, and AI keys.
+- [ ] Demonstrate application rollback to the previous commit without running `migrate:rollback`; demonstrate database recovery from the verified backup only against a separate restore database.
+- [ ] Record deployed domain/path/commit, PostgreSQL/backup state, TLS expiry, worker status, smoke results, rollback evidence, and exact safe commands in `docs/DEVELOPMENT_LOG.md`; complete and merge Task 14 before starting Task 15.
+- [ ] Commit: `build(api): add production deployment workflow`.
+
+## Task 15: Produce and verify the signed Android release APK
 
 **Files:**
 
@@ -726,6 +779,7 @@ public function schema(JsonSchema $schema): array
 
 - Produces `npm run android:release` that validates configuration, builds web assets, syncs Capacitor, and calls Gradle `assembleRelease`.
 - Produces a signed `apps/mobile/android/app/build/outputs/apk/release/app-release.apk` for manual installation.
+- Consumes the Task 14 production API through `VITE_API_BASE_URL=https://cue-cards.web-func.ru`; release builds must fail when the HTTPS API URL is absent or invalid.
 - Consumes a user-created keystore path and passwords from untracked `key.properties` or protected CI secrets; it never creates or commits credentials automatically.
 
 - [ ] Write `verifyReleaseConfig.test.ts` first for missing file, missing key alias, nonexistent keystore, debug keystore rejection, and a syntactically valid external release configuration.
@@ -735,20 +789,24 @@ public function schema(JsonSchema $schema): array
 - [ ] Configure Gradle release signing only when validation succeeds, enable release minification/resource shrinking, and retain Capacitor/plugin classes required by the installed dependencies.
 - [ ] Limit Android manifest permissions to network state and those actually required by selected plugins; do not request broad storage access for Android versions where the system document picker grants URI access.
 - [ ] Document an explicit one-time keystore command using a path outside the repository, backup requirements, SHA-256 checksum recording, local `key.properties`, build, `apksigner verify --verbose --print-certs`, and `adb install -r`.
-- [ ] Add a protected manual/tagged CI release job that reads base64 keystore and passwords from CI secrets, builds the APK, verifies its certificate, and uploads the APK plus SHA-256 checksum; never run this job for pull requests.
+- [ ] Add a protected manual/tagged CI release job that reads base64 keystore and passwords from CI secrets, requires the Task 14 production `API_BASE_URL`, builds the APK, verifies its certificate, and uploads the APK plus SHA-256 checksum; never run this job for pull requests.
 - [ ] Run the complete API/mobile/contract/E2E matrix, then `npm run android:release` and `apksigner verify --verbose --print-certs` against the produced APK.
 - [ ] Install with `adb install -r`, log in once, import the synthetic fixture, generate fake or staging cues, force-stop with `adb shell am force-stop app.cuecards.mobile`, disable network, relaunch, and verify library plus recording position remain available.
 - [ ] Re-enable network, verify queued changes sync once, and inspect server/mobile logs to confirm no script text or secrets were emitted.
 - [ ] Record the APK path, SHA-256 checksum, application ID, version code/name, signing certificate SHA-256, device/Android version, and smoke result in a private release record; only the non-secret procedure belongs in Git.
-- [ ] Update `docs/tasks/001-current-task.md` to point to no active implementation task, finalize the development log, and commit: `build(android): add reproducible signed APK release`.
+- [ ] Complete `docs/tasks/015-current-task.md`, finalize the development log with no active implementation task, and commit: `build(android): add reproducible signed APK release`.
 
 ## Final Acceptance Matrix
 
 - [ ] Fresh checkout installation succeeds from documented Composer/npm commands.
+- [ ] Production API deploys from a successful `main` CI run, serves `/up` and `/api/v1/*` over trusted HTTPS, and reports the intended commit with `APP_DEBUG=false`.
+- [ ] Production PostgreSQL backup retention and a separate restore drill pass before migrations; application rollback is demonstrated without `migrate:rollback`.
+- [ ] The supervised database worker consumes queue `ai`, completes one synthetic generation, and restarts cleanly after deployment.
 - [ ] API PHPUnit suite passes on SQLite and PostgreSQL; Pint reports no changes.
 - [ ] Mobile unit/component/integration suites, strict typecheck, Vite production build, and Playwright journeys pass.
 - [ ] OpenAPI regeneration is clean and every implemented API route is represented.
 - [ ] Android Gradle unit tests, debug assembly, signed release assembly, signature verification, install, update, force-stop, and offline relaunch pass.
+- [ ] The signed release APK is built with the verified Task 14 HTTPS `VITE_API_BASE_URL` and completes login, sync, AI, reconnect, and conflict smoke tests against production.
 - [ ] Import handles approved Markdown and TXT behavior with synthetic Cyrillic fixtures and a correctable preview.
 - [ ] Editor, cues, recording position, and outbox survive process restart without network.
 - [ ] Sync retries are idempotent and every version conflict preserves both local and server data until an explicit choice.

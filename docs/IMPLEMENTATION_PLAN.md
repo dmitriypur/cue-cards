@@ -6,15 +6,17 @@ The approved product design is in [`docs/superpowers/specs/2026-08-05-cue-cards-
 
 | Phase | Deliverable | Acceptance gate | Status |
 |---|---|---|---|
-| 1 | Monorepo, Laravel/Vue/Capacitor skeletons, CI | API and mobile baseline tests/build pass | Planned |
-| 2 | Mobile domain, SQLite, library | Scripts survive restart and render from local data | Planned |
-| 3 | MD/TXT import and preview | Synthetic Cyrillic fixtures parse and can be corrected before save | Planned |
-| 4 | Card editor | Edit, reorder, split, merge, soft-delete, undo, stale-cue rules pass | Planned |
-| 5 | Offline recording mode | Position/mode persist; swipe/buttons work; screen sleep is restored on exit | Planned |
-| 6 | Laravel identity and script API | Superadmin login and ownership-protected API pass on SQLite and PostgreSQL | Planned |
-| 7 | Outbox sync and conflicts | Commands are idempotent; 409 keeps both versions; retry resumes after offline | Planned |
-| 8 | AI cues and usage | Fake structured generation, retries, stale-hash protection, and usage accounting pass | Planned |
-| 9 | Hardening and signed APK | Full CI/E2E passes; signed release APK installs and works after force-stop offline | Planned |
+| 1 | Monorepo, Laravel/Vue/Capacitor skeletons, CI | API and mobile baseline tests/build pass | Complete |
+| 2 | Mobile domain, SQLite, library | Scripts survive restart and render from local data | Complete |
+| 3 | MD/TXT import and preview | Synthetic Cyrillic fixtures parse and can be corrected before save | Complete |
+| 4 | Card editor | Edit, reorder, split, merge, soft-delete, undo, stale-cue rules pass | Complete |
+| 5 | Offline recording mode | Position/mode persist; swipe/buttons work; screen sleep is restored on exit | Complete |
+| 6 | Laravel identity and script API | Superadmin login and ownership-protected API pass on SQLite and PostgreSQL | Complete |
+| 7 | Outbox sync and conflicts | Commands are idempotent; 409 keeps both versions; retry resumes after offline | Complete |
+| 8 | AI cues and usage | Fake structured generation, retries, stale-hash protection, and usage accounting pass | Complete |
+| 9 | E2E, accessibility, privacy, and failure hardening | Full API/mobile/PostgreSQL/E2E/Android debug matrix passes | Complete |
+| 10 | Production API deployment | HTTPS API, PostgreSQL, database queue worker, backup/rollback, and GitHub auto-deploy pass smoke tests | Planned — Task 14 |
+| 11 | Signed Android APK | Signed release APK targets production API, installs, and works after force-stop offline | Planned — Task 15 |
 
 ## Scope guard
 

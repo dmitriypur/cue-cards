@@ -15,8 +15,8 @@ The approved product design is in [`docs/superpowers/specs/2026-08-05-cue-cards-
 | 7 | Outbox sync and conflicts | Commands are idempotent; 409 keeps both versions; retry resumes after offline | Complete |
 | 8 | AI cues and usage | Fake structured generation, retries, stale-hash protection, and usage accounting pass | Complete |
 | 9 | E2E, accessibility, privacy, and failure hardening | Full API/mobile/PostgreSQL/E2E/Android debug matrix passes | Complete |
-| 10 | Production API deployment | HTTPS API, PostgreSQL, database queue worker, backup/rollback, and GitHub auto-deploy pass smoke tests | Planned — Task 14 |
-| 11 | Signed Android APK | Signed release APK targets production API, installs, and works after force-stop offline | Planned — Task 15 |
+| 10 | Production API deployment | HTTPS API, PostgreSQL, database queue worker, and GitHub `main` auto-deploy pass demo smoke tests | Complete — Task 14 |
+| 11 | Signed Android APK | Signed personal-demo release APK targets the production API and passes build, signature, and login checks | Complete — Task 15 |
 
 ## Scope guard
 

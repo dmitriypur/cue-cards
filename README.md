@@ -30,6 +30,8 @@ npm run cap:sync
 
 Set `JAVA_HOME` and `ANDROID_HOME` to the local JDK 21 and Android SDK locations before using Gradle. Keep API keys and signing material only in ignored local environment files.
 
+For a signed personal-demo APK targeting the production API, follow [docs/ANDROID_RELEASE.md](docs/ANDROID_RELEASE.md).
+
 ## AI queue
 
 AI cue generation uses the Laravel database queue. Configure `DEEPSEEK_API_KEY`, optional `DEEPSEEK_URL`, and `CUE_CARDS_AI_MODEL` only in the server `.env`, then run the dedicated worker:

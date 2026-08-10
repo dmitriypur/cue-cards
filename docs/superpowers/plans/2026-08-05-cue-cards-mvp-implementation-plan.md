@@ -709,58 +709,35 @@ public function schema(JsonSchema $schema): array
 - [x] Run the exact clean verification matrix documented in README and record commands, counts, and outcomes in the development log.
 - [x] Commit: `test: harden end-to-end offline and privacy behavior`.
 
-## Task 14: Deploy and verify the production Laravel API
+## Task 14: Deploy the personal demo Laravel API
 
-**Reference environment:**
+Task 14 is intentionally reduced to the owner's personal demo. Production-scale backup automation, restore drills, protected-environment approvals, dedicated deploy users, and exhaustive deployment verification are deferred until the owner has evaluated the installed APK.
+
+**Demo defaults:**
 
 - Existing deployment pattern: `/Users/dmitriypur/Desktop/LARAVEL_PROJECTS/entrepreneur-platform/.github/workflows/deploy.yml`.
-- Audited server baseline on 2026-08-08: Ubuntu 24.04, PHP 8.3, PostgreSQL 16, Nginx, Certbot, Supervisor, and the required PHP extensions are available.
-- Recommended exact defaults pending operator confirmation: API domain `cue-cards.web-func.ru`, repository path `/var/www/cue-cards-api`, Laravel root `/var/www/cue-cards-api/apps/api`, runtime user/group `www-data`, PHP-FPM service `php8.3-fpm`.
-- The Cue Cards repository currently has no Git remote. Production deployment must not start until the GitHub repository/remote, API domain, backup destination, AI credential reuse, and superadmin bootstrap values are confirmed through a secure channel.
+- API domain: `cue-cards.web-func.ru`.
+- Repository path: `/var/www/cue-cards-api`.
+- Laravel root: `/var/www/cue-cards-api/apps/api`.
+- SSH deployment user: `root`, matching the existing application.
+- Runtime user: `www-data`; PHP-FPM: `php8.3-fpm`; queue: database queue `ai`.
 
 **Files:**
 
 - Modify: `.github/workflows/ci.yml`
-- Create: `scripts/deploy/verify-api-runtime-permissions.sh`
-- Create: `scripts/deploy/tests/verify-api-runtime-permissions-test.sh`
 - Create: `docs/API_DEPLOYMENT.md`
 - Modify: `docs/tasks/014-current-task.md`
 - Modify: `README.md`
 - Modify: `docs/DEVELOPMENT_LOG.md`
 
-**External configuration (never commit secrets):**
-
-- Create PostgreSQL database/user dedicated to Cue Cards.
-- Create `/var/www/cue-cards-api` with deploy-owner code and `.git`, plus runtime-write access only to `apps/api/storage` and `apps/api/bootstrap/cache`.
-- Create an Nginx HTTPS server block rooted at `/var/www/cue-cards-api/apps/api/public` and obtain a Certbot certificate for `cue-cards.web-func.ru` after DNS is confirmed.
-- Create `/etc/supervisor/conf.d/cue-cards-ai-worker.conf` running `/usr/bin/php8.3 /var/www/cue-cards-api/apps/api/artisan queue:work database --queue=ai --sleep=1 --tries=3 --timeout=100` as `www-data`.
-- Configure PostgreSQL backup retention and a tested restore drill before the first production migration; no production deployment is accepted with only same-disk unverified backups.
-- Configure bounded rotation for Laravel and worker logs.
-
-**Interfaces:**
-
-- Produces `https://cue-cards.web-func.ru/up` as the TLS-verified health endpoint and `/api/v1/*` as the production mobile API.
-- Produces GitHub auto-deploy from `main` only after the complete CI matrix succeeds.
-- Produces a supervised database-queue worker that consumes only queue `ai` with a 100-second worker timeout.
-- Consumes GitHub secrets `HOST`, `PORT`, `USERNAME`, `SSH_KEY`, `APP_DIR`, optional `RUNTIME_USER`, and optional `PHP_FPM_SERVICE`; consumes `API_BASE_URL` as a GitHub repository variable.
-- Consumes an untracked production `apps/api/.env` with `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL`, PostgreSQL credentials, database queue/cache/session settings, `DEEPSEEK_API_KEY`, and server-controlled superadmin bootstrap values.
-
-- [ ] Confirm the exact API domain, create/connect the GitHub repository and `origin`, approve reuse or replacement of the existing server-side DeepSeek key, provide superadmin bootstrap values securely, and select an off-server backup destination/retention policy.
-- [ ] Create branch/worktree `codex/task-014-production-api-deploy`; verify clean `main` at the Task 13 merge and update `docs/tasks/014-current-task.md` as each increment completes.
-- [ ] Write `scripts/deploy/tests/verify-api-runtime-permissions-test.sh` first for a deploy owner distinct from `www-data`, read-only code/`.env`, runtime-writable `storage` and `bootstrap/cache`, missing targets, and unsafe world/group write modes; run it and observe the missing verifier failure.
-- [ ] Implement `scripts/deploy/verify-api-runtime-permissions.sh` without printing environment contents or secrets; rerun the focused shell test to green.
-- [ ] Adapt the proven `entrepreneur-platform` GitHub Actions deployment into `.github/workflows/ci.yml`: deploy only a successful push to `main`, use `apps/api`, maintenance mode with an EXIT recovery trap, exact origin revision, production Composer install, environment preflight, migration status, `migrate --force`, Laravel caches, permissions verifier, queue restart, PHP-FPM restart, Nginx reload, and HTTPS health smoke.
-- [ ] Keep mobile/Android builds in GitHub Actions with Node 24; do not install or build the mobile client on the production server. Ensure deployment output never prints `.env`, database credentials, access tokens, AI keys, signing material, or user content.
-- [ ] Write `docs/API_DEPLOYMENT.md` with one-time DNS, GitHub variables/secrets, PostgreSQL role/database, production environment field names without secret values, Nginx/TLS, permissions, Supervisor, log rotation, backup/restore, deploy, smoke, and rollback procedures using exact non-secret paths.
-- [ ] Establish and verify an off-server PostgreSQL backup plus restore drill before schema deployment. Record only timestamps, database name, sizes, checksums, retention, and success status; never commit backup contents or credentials.
-- [ ] Provision the exact application directory, database role/database, production `.env`, Nginx TLS site, Supervisor worker, and log rotation. Validate configs before reload and preserve recoverable copies of replaced server files.
-- [ ] Run the complete local/CI API SQLite/PostgreSQL, Pint, mobile unit/type/build, OpenAPI drift, Playwright, Capacitor, and Android debug gates before the first production migration.
-- [ ] Trigger the first `main` auto-deploy; verify the deployed commit, `APP_ENV=production`, `APP_DEBUG=false`, migration status, writable runtime paths, `/up` over trusted TLS, stable error envelopes, and that no unintended public Laravel paths are exposed.
-- [ ] Seed the initial `superadmin` once using securely supplied values, then remove the bootstrap password from the persistent environment and rebuild config cache; verify login without printing credentials or tokens.
-- [ ] Submit one synthetic Cyrillic script through the production API, verify sync idempotency/conflict behavior, enqueue and complete one AI generation through the supervised `ai` worker, and inspect sanitized logs for absence of script text, bearer tokens, passwords, and AI keys.
-- [ ] Demonstrate application rollback to the previous commit without running `migrate:rollback`; demonstrate database recovery from the verified backup only against a separate restore database.
-- [ ] Record deployed domain/path/commit, PostgreSQL/backup state, TLS expiry, worker status, smoke results, rollback evidence, and exact safe commands in `docs/DEVELOPMENT_LOG.md`; complete and merge Task 14 before starting Task 15.
-- [ ] Commit: `build(api): add production deployment workflow`.
+- [x] Create branch/worktree `codex/task-014-production-api-deploy`.
+- [x] Add a direct GitHub SSH deploy job for every push to `main`; it does not wait for CI jobs and does not build the mobile client on the server.
+- [x] Deploy with `git fetch/reset`, production Composer install, `migrate --force`, Laravel caches, runtime permissions, PHP-FPM/worker restart, Nginx validation/reload, and HTTPS `/up` smoke.
+- [x] Document minimal GitHub secrets, server checkout, PostgreSQL, `.env`, Nginx TLS, Supervisor worker, and one-time superadmin setup.
+- [ ] Create/connect the GitHub repository and configure `HOST`, `PORT`, `USERNAME`, `SSH_KEY`, `APP_DIR`, and `API_BASE_URL`.
+- [ ] Provision the server, push `main`, and verify `/up`, login, sync, and one AI generation without printing credentials or tokens.
+- [ ] Commit and merge Task 14, then start Task 15 for the owner's APK.
+- [ ] Commit: `build(api): add demo deployment workflow`.
 
 ## Task 15: Produce and verify the signed Android release APK
 

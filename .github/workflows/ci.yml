@@ -7,6 +7,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   api:
     name: API
@@ -159,3 +163,79 @@ jobs:
             apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
             apps/mobile/android/**/build/reports/tests
           if-no-files-found: ignore
+
+  deploy-api:
+    name: Deploy API
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          port: ${{ secrets.PORT }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -euo pipefail
+
+            APP_DIR="${{ secrets.APP_DIR }}"
+            API_DIR="$APP_DIR/apps/api"
+            API_BASE_URL="${{ vars.API_BASE_URL }}"
+
+            if [ -z "$APP_DIR" ] || [ -z "$API_BASE_URL" ]; then
+              echo 'APP_DIR and API_BASE_URL are required.' >&2
+              exit 1
+            fi
+
+            cd "$APP_DIR"
+            git config --global --add safe.directory "$APP_DIR"
+
+            maintenance_active=0
+            restore_application() {
+              exit_code=$?
+              if [ "$maintenance_active" -eq 1 ] && [ -f "$API_DIR/artisan" ]; then
+                (cd "$API_DIR" && /usr/bin/php8.3 artisan up --no-interaction) || true
+              fi
+              exit "$exit_code"
+            }
+            trap restore_application EXIT HUP INT TERM
+
+            if [ -f "$API_DIR/vendor/autoload.php" ]; then
+              cd "$API_DIR"
+              /usr/bin/php8.3 artisan down --retry=60 --no-interaction
+              maintenance_active=1
+            fi
+
+            cd "$APP_DIR"
+            git fetch origin main
+            git reset --hard origin/main
+
+            cd "$API_DIR"
+            composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
+            /usr/bin/php8.3 artisan config:clear --no-interaction
+            /usr/bin/php8.3 artisan migrate --force --no-interaction
+            /usr/bin/php8.3 artisan config:cache --no-interaction
+            /usr/bin/php8.3 artisan route:cache --no-interaction
+            /usr/bin/php8.3 artisan view:cache --no-interaction
+            /usr/bin/php8.3 artisan event:cache --no-interaction
+            /usr/bin/php8.3 artisan queue:restart --no-interaction
+
+            chown -R root:www-data "$APP_DIR"
+            find "$APP_DIR" -type d -exec chmod 0750 {} +
+            find "$APP_DIR" -type f ! -perm /111 -exec chmod 0640 {} +
+            find "$APP_DIR" -type f -perm /111 -exec chmod 0750 {} +
+            chown -R www-data:www-data "$API_DIR/storage" "$API_DIR/bootstrap/cache"
+            find "$API_DIR/storage" "$API_DIR/bootstrap/cache" -type d -exec chmod 0770 {} +
+            find "$API_DIR/storage" "$API_DIR/bootstrap/cache" -type f -exec chmod 0660 {} +
+
+            systemctl restart php8.3-fpm
+            supervisorctl restart cue-cards-ai-worker
+            nginx -t
+
+            /usr/bin/php8.3 artisan up --no-interaction
+            maintenance_active=0
+            trap - EXIT HUP INT TERM
+
+            systemctl reload nginx
+            curl --fail --silent --show-error --max-time 20 "$API_BASE_URL/up" >/dev/null

@@ -77,6 +77,14 @@ class AuthTest extends TestCase
             ->assertJsonStructure(['error' => ['code', 'message', 'correlation_id']]);
     }
 
+    public function test_api_authentication_never_redirects_plain_http_clients(): void
+    {
+        $this->get('/api/v1/me')
+            ->assertUnauthorized()
+            ->assertJsonPath('error.code', 'AUTH_UNAUTHENTICATED')
+            ->assertJsonStructure(['error' => ['code', 'message', 'correlation_id']]);
+    }
+
     public function test_authenticated_me_returns_identity_without_credentials(): void
     {
         $user = User::factory()->create(['role' => Role::Superadmin]);

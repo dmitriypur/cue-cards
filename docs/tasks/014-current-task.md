@@ -1,64 +1,43 @@
-# Task 014 — production API deployment
+# Task 014 — personal demo API deployment
 
-**Status:** Ready; implementation not started
-
-**Plan source:** Task 14 in `docs/superpowers/plans/2026-08-05-cue-cards-mvp-implementation-plan.md`.
+**Status:** In progress on `codex/task-014-production-api-deploy`
 
 ## Required outcome
 
-Deploy `apps/api` to the existing Ubuntu server with PostgreSQL, trusted HTTPS, a supervised database-queue worker for queue `ai`, backup/restore evidence, sanitized logs, rollback instructions, and GitHub auto-deploy from a successful `main` CI run. Task 15 may build the signed APK only after the production API passes its smoke tests.
+Deploy `apps/api` to the existing Ubuntu server so the owner's Android APK can use login, synchronization, and AI cues through `https://cue-cards.web-func.ru`.
 
-## Confirmed starting point
+This is a personal demo deployment. Backup automation, restore drills, protected-environment approvals, dedicated deploy users, and production-scale hardening are deferred until the demo has been evaluated.
 
-- Tasks 001–013 are complete and merged into `main`; Task 13 merge commit is `04a760a`.
-- The Cue Cards worktree was clean after merged verification. The repository currently has no Git remote configured.
-- Reference workflow: `/Users/dmitriypur/Desktop/LARAVEL_PROJECTS/entrepreneur-platform/.github/workflows/deploy.yml`.
-- Reference server application: `/var/www/predprinimatel`, deployed from GitHub `main` through SSH.
-- Server audit on 2026-08-08 was read-only except for the separately authorized removal of obsolete `services-worker` from active Supervisor configuration.
+## Demo deployment
 
-## Audited server baseline
+- Server path: `/var/www/cue-cards-api`.
+- Laravel root: `/var/www/cue-cards-api/apps/api`.
+- Deploy trigger: every push to GitHub `main`, without waiting for CI jobs.
+- Deploy transport: root SSH, matching the existing `entrepreneur-platform` pattern.
+- Runtime: PHP 8.3, PostgreSQL 16, Nginx, Supervisor, database queue `ai`.
+- Health: `https://cue-cards.web-func.ru/up`.
 
-- Ubuntu 24.04; PHP 8.3.30; Composer 2.8.6; Nginx 1.24; PostgreSQL 16.14; Supervisor, Redis, PHP-FPM, and Certbot are active.
-- Required PHP modules, including `pdo_pgsql`, `curl`, `mbstring`, `intl`, `xml`, and `zip`, are installed.
-- PostgreSQL listens on localhost, has a 100-connection limit and used 6 connections during the audit.
-- Root filesystem had approximately 4.6 GiB free; about 1.9 GiB memory was available.
-- PHP-FPM runs as `www-data` through `/run/php/php8.3-fpm.sock`.
-- Existing TLS/health flow works: `https://test.web-func.ru/up` returned 200 with a valid certificate.
-- The server can read the existing GitHub repository over SSH. The new Cue Cards repository still requires its own remote and GitHub Actions variables/secrets.
-- Obsolete `/etc/supervisor/conf.d/services-worker.conf` referenced the deleted `/var/www/services_master`; it was recoverably moved to `services-worker.conf.disabled`. The remaining application workers stayed running.
+## Progress
 
-## Risks that must be handled before deployment
-
-- No application PostgreSQL backup files, backup timer/cron, or off-server restore evidence were found. The first production migration is blocked until backup retention and a separate restore drill exist.
-- SSH currently permits root login and password authentication. Existing GitHub deployment uses root, but Task 14 should prefer a dedicated non-root deploy owner or explicitly record acceptance of the temporary root-key risk.
-- Nginx has an unrelated duplicate HTTP declaration for `www.cartocrimea.ru`; `nginx -t` succeeds, so it does not block Cue Cards.
-- Supervisor has no Cue Cards worker yet. The required command is `/usr/bin/php8.3 /var/www/cue-cards-api/apps/api/artisan queue:work database --queue=ai --sleep=1 --tries=3 --timeout=100` as `www-data`.
-- Laravel/worker log rotation must be bounded to avoid consuming the remaining disk space.
-
-## Operator confirmations required before any production mutation
-
-1. Confirm or replace the recommended API domain `cue-cards.web-func.ru`.
-2. Provide/create the GitHub repository and authorize adding `origin`; configure repository Actions variables/secrets without exposing values.
-3. Approve reuse of the existing server-side DeepSeek credential or provide a replacement securely. Never copy its value into Git, task files, logs, or chat output.
-4. Select an off-server PostgreSQL backup destination and retention policy.
-5. Provide the initial superadmin name/email/password through a secure channel. The password is one-time bootstrap input and must be removed from persistent environment configuration after seeding.
-6. Choose a dedicated deploy user or explicitly approve continued root-key deployment for the MVP.
-
-## Execution order
-
-1. Report that Task 14 is starting; recheck Git history, status, this checkpoint, and the server baseline without repeating completed Task 13 work.
-2. Create isolated branch/worktree `codex/task-014-production-api-deploy`.
-3. Implement and test the runtime-permissions verifier, GitHub deploy job, and deployment documentation.
-4. Run the complete local CI-equivalent matrix and independent review before touching production.
-5. Establish backup/restore and rollback evidence.
-6. Provision database, application path, secret environment, Nginx/TLS, Supervisor, permissions, and log rotation using exact resolved targets and recoverable config changes.
-7. Deploy through GitHub `main`, then verify health, authentication, sync, one synthetic AI job, sanitized logs, and rollback.
-8. Record safe evidence, commit/merge Task 14, clean its branch/worktree, and report that Task 15 is next but not started.
+- [x] Created branch/worktree `codex/task-014-production-api-deploy` from `main` at `c7e7829`.
+- [x] Added a minimal GitHub SSH deployment job.
+- [x] Added the short server setup guide in `docs/API_DEPLOYMENT.md`.
+- [x] Verified the workflow YAML and embedded deployment Bash syntax without repeating application test suites.
+- [x] Connected `origin` to `git@github.com:dmitriypur/cue-cards.git`; SSH access succeeds and the remote repository is currently empty.
+- [x] Configured GitHub `HOST`, `PORT`, `USERNAME`, `SSH_KEY`, `APP_DIR`, and `API_BASE_URL` with a dedicated Cue Cards deploy key; secret values were not printed or committed.
+- [x] Added DNS for `cue-cards.web-func.ru`; it resolves to `77.222.42.47`.
+- [x] Provisioned the server checkout, production `.env` without an AI key, PostgreSQL role/database, all migrations, HTTP Nginx site, and running Supervisor worker.
+- [x] Issued the trusted Certbot certificate (expires 2026-11-07); HTTP redirects with 301 and HTTPS `/up` returns 200.
+- [x] Reused the existing server-side DeepSeek credential after explicit approval, rebuilt config cache, and restarted the running AI worker without exposing the key.
+- [x] Create the initial superadmin securely; production verification returned exactly one user, one `superadmin`, and one distinct email without exposing account data.
+- [x] Verified the deployed commit, production environment, disabled debug mode, PostgreSQL migrations, database queue, running `ai` worker, and trusted HTTPS `/up` response.
+- [x] Reproduced and fixed the plain-client API authentication failure: unauthenticated `/api/v1/me` now has a focused regression test requiring the stable 401 JSON envelope instead of a missing web-login redirect.
+- [x] Diagnosed the first public GitHub run without repeating tests: API and PostgreSQL jobs passed; mobile jobs stopped at `npm ci` because the lock omitted the required `eslint` peer. Added the exact dev dependency and verified a clean install.
+- [ ] Push the deploy workflow to `main`, then verify login, sync, and one AI generation.
+- [ ] Commit and merge Task 14; then start Task 15 for the personal APK.
 
 ## Scope guard
 
-- Do not start Android signing or Task 15.
-- Do not install Redis/Horizon into Cue Cards; its MVP queue remains PostgreSQL-backed.
-- Do not run `migrate:rollback` in production.
-- Do not print or commit `.env`, database passwords, access tokens, AI keys, SSH keys, superadmin passwords, user script text, database dumps, or signing material.
-- Use only synthetic Cyrillic content for production smoke tests.
+- Do not start Android signing or Task 15 before the demo API is reachable.
+- Do not print or commit `.env`, passwords, tokens, API keys, SSH keys, or signing material.
+- Do not add Redis, Horizon, billing, public registration, backup automation, or restore drills to this demo task.

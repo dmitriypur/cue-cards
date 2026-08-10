@@ -91,6 +91,7 @@ function updatedCard(input: {
 
 function mountEditor() {
   const getScript = vi.fn().mockResolvedValue(aggregate)
+  const readScript = vi.fn().mockResolvedValue(aggregate)
   const updateCard = vi.fn().mockImplementation(async (input) => updatedCard(input))
   const reorderCards = vi.fn().mockImplementation(async ({ orderedCardIds }) => ({
     ...aggregate,
@@ -132,6 +133,7 @@ function mountEditor() {
   let backgroundListener: (() => void) | null = null
   const dependencies: EditorDependencies = {
     getScript: { execute: getScript },
+    readScript: { execute: readScript },
     updateCard: { execute: updateCard },
     reorderCards: { execute: reorderCards },
     splitCard: { execute: splitCard },
@@ -175,6 +177,7 @@ function mountEditor() {
     startCardGeneration,
     generation,
     getScript,
+    readScript,
     publishGeneration: (value: AiGeneration) => generationListener?.(value),
     background: () => backgroundListener?.(),
   }
@@ -304,6 +307,7 @@ describe('ScriptEditorView', () => {
       startScriptGeneration,
       startCardGeneration,
       getScript,
+      readScript,
       publishGeneration,
       generation,
     } = mountEditor()
@@ -312,11 +316,13 @@ describe('ScriptEditorView', () => {
     await wrapper.get('[data-action="generate-script-cues"]').trigger('click')
     await flushPromises()
     expect(startScriptGeneration).toHaveBeenCalledWith(aggregate.id)
-    expect(getScript).toHaveBeenCalledTimes(2)
+    expect(getScript).toHaveBeenCalledTimes(1)
+    expect(readScript).toHaveBeenCalledTimes(1)
 
     publishGeneration({ ...generation, status: 'completed', completedCards: 2 })
     await flushPromises()
-    expect(getScript).toHaveBeenCalledTimes(3)
+    expect(getScript).toHaveBeenCalledTimes(1)
+    expect(readScript).toHaveBeenCalledTimes(2)
 
     await wrapper.get('[data-card-id="card-b"] [data-action="regenerate-card"]').trigger('click')
     expect(startCardGeneration).not.toHaveBeenCalled()

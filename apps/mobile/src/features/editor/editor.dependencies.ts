@@ -13,6 +13,7 @@ export interface ScriptLoader {
 
 export interface EditorDependencies {
   readonly getScript: ScriptLoader
+  readonly readScript: ScriptLoader
   readonly updateCard: Pick<UpdateCard, 'execute'> & { execute(input: UpdateCardInput): Promise<ScriptAggregate> }
   readonly reorderCards: Pick<ReorderCards, 'execute'> & { execute(input: ReorderCardsInput): Promise<ScriptAggregate> }
   readonly splitCard: Pick<SplitCard, 'execute'> & { execute(input: SplitCardInput): Promise<ScriptAggregate> }

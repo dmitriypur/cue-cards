@@ -260,3 +260,14 @@
 - Production login smoke passed login 200, authenticated `/me` 200, and logout 204 using a generated temporary superadmin. Credentials/token were never printed, and the temporary account was deleted automatically.
 - `adb devices` found no connected Android device. The installable artifact was copied to `/Users/dmitriypur/Desktop/LARAVEL_PROJECTS/cue-cards/apps/mobile/android/app/build/outputs/apk/release/app-release.apk`; install with `adb install -r` followed by that path.
 - Task 015 is complete under the owner's simplified personal-demo scope. Protected release CI, public distribution, the repeated full test matrix, and extended device/offline scenarios remain deferred.
+
+## 2026-08-10 — Task 016: AI sync ordering and stable Android layout
+
+- Production-safe metadata showed the affected generation completed with ready cue sets for all 10 cards. Source tracing identified an avoidable version gap: AI start advanced the server aggregate, then editor refresh touched `lastOpenedAt` and queued a command against the stale local version.
+- Added a post-acceptance ordinary sync for both script and card generation. The accepted generation ID is durably stored before that sync, so retry/auth/conflict results remain resumable without starting a duplicate generation.
+- Added the side-effect-free `ReadScript` application action and routed generation/poll refreshes through it. Initial editor opening retains the intentional last-opened persistence behavior.
+- Stabilized the global synchronization banner as a one-row `min-h-16` grid; button state changes no longer alter the page's vertical origin. Genuine conflicts remain manual.
+- Focused TDD evidence: AI ordering had 6 intended RED failures and passed 18/18 after implementation; read-only editor refresh failed on the missing action/repeated open and passed 11/11; the banner layout contract failed before the CSS change. Combined GREEN passed 35 tests in 4 files, and strict typecheck passed.
+- Production mobile build passed with 189 transformed modules. Signed `npm run android:release` completed Vite, Capacitor, R8, lint, and `assembleRelease` successfully with 360 executed Gradle tasks.
+- `apksigner` verified one RSA-4096 APK Signature Scheme v2 signer. APK metadata is `app.cuecards.mobile` version code 1/name 1.0, the embedded origin is `https://cue-cards.web-func.ru`, and SHA-256 is `cb76d200274d11d1d91e3cb58578d8bf172507afc850d13550cecf1e25c65b73`.
+- No Android device was connected, so installation was not attempted. The already persisted conflict remains a one-time explicit choice of the server version after updating the installed app.

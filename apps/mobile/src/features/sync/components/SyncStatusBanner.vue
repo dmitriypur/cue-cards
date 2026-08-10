@@ -31,14 +31,14 @@ async function openConflict(): Promise<void> {
   <div
     role="status"
     aria-live="polite"
-    class="grid min-h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-border bg-muted px-3 text-center text-sm text-muted-foreground"
+    class="grid min-h-12 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-border bg-muted px-3 text-center text-sm text-muted-foreground"
   >
-    <span class="min-w-0">{{ label }}</span>
+    <span class="min-w-0 leading-4 text-xs">{{ label }}</span>
     <button
       v-if="store.state === 'retrying'"
       type="button"
       data-action="retry-sync"
-      class="min-h-12 px-2 font-medium text-primary"
+      class="min-h-8 px-2 font-medium text-primary leading-4 text-xs"
       @click="retry"
     >
       Повторить сейчас
@@ -47,7 +47,7 @@ async function openConflict(): Promise<void> {
       v-else-if="store.state === 'auth-required'"
       type="button"
       data-action="open-login"
-      class="min-h-12 px-2 font-medium text-primary"
+      class="min-h-8 px-2 font-medium text-primary leading-4 text-xs"
       @click="navigation?.openLogin()"
     >
       Войти
@@ -56,7 +56,7 @@ async function openConflict(): Promise<void> {
       v-else-if="store.state === 'conflict'"
       type="button"
       data-action="open-conflict"
-      class="min-h-12 px-2 font-medium text-primary"
+      class="min-h-8 px-2 font-medium text-primary leading-4 text-xs"
       @click="openConflict"
     >
       Сравнить версии
@@ -65,7 +65,7 @@ async function openConflict(): Promise<void> {
       v-else-if="store.state !== 'syncing'"
       type="button"
       data-action="sync-now"
-      class="min-h-12 px-2 font-medium text-primary"
+      class="min-h-8 px-2 font-medium text-primary leading-4 text-xs"
       @click="retry"
     >
       Синхронизировать

@@ -24,7 +24,7 @@ const fontScale = ref(1)
 
     <label class="mt-6 grid gap-2 font-medium">
       Начальная карточка
-      <select v-model="cardId" aria-label="Начальная карточка" class="min-h-12 rounded-lg border bg-background px-3">
+      <select v-model="cardId" aria-label="Начальная карточка" class="min-h-12 rounded-lg border bg-background px-3 w-full">
         <option v-for="card in cards" :key="card.id" :value="card.id">
           {{ card.position + 1 }}. {{ card.title }}
         </option>

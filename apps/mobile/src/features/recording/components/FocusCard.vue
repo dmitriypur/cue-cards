@@ -39,15 +39,15 @@ watch(() => [props.card.id, props.mode], restoreScroll)
 <template>
   <section
     data-focus-card
-    class="mx-auto flex h-[calc(100dvh-13rem)] max-h-[calc(100dvh-13rem)] min-h-0 max-w-4xl flex-col overflow-hidden rounded-2xl border bg-surface p-4 text-surface-foreground sm:p-6"
+    class="mx-auto flex h-full min-h-0 max-w-4xl flex-col overflow-hidden rounded-2xl border bg-surface p-4 text-surface-foreground sm:p-6"
     @touchstart.passive="onTouchStart"
     @touchend.passive="onTouchEnd"
   >
     <header class="flex items-center justify-between gap-3">
-      <p class="rounded-full bg-muted px-3 py-2 text-sm text-muted-foreground">
+      <p class="rounded-full bg-muted px-3 py-2 text-xs text-muted-foreground">
         {{ index + 1 }} из {{ total }}
       </p>
-      <h1 class="text-right text-xl font-semibold sm:text-2xl">{{ card.title }}</h1>
+      <h1 class="text-right font-semibold">{{ card.title }}</h1>
     </header>
 
     <div role="group" class="mt-5 grid grid-cols-2 rounded-xl bg-muted p-1" aria-label="Режим отображения">
@@ -75,7 +75,7 @@ watch(() => [props.card.id, props.mode], restoreScroll)
     <div
       ref="content"
       data-recording-content
-      class="mt-5 min-h-0 flex-1 overflow-y-auto rounded-xl bg-background p-5 leading-relaxed"
+      class="mt-5 min-h-0 flex-1 overflow-y-auto rounded-xl bg-background leading-relaxed"
       :style="{ fontSize: `${fontScale}rem` }"
       @scroll="mode === 'full' && emit('scroll', ($event.currentTarget as HTMLElement).scrollTop)"
     >

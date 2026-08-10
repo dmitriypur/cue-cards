@@ -1,6 +1,6 @@
 # Task 016 — AI sync ordering and stable Android layout
 
-**Status:** Design approved; implementation plan pending
+**Status:** Implementation in progress
 
 ## Outcome
 
@@ -18,6 +18,6 @@ Prevent AI-start version gaps from producing false conflicts, keep real conflict
 - [x] Reproduced the faulty version ordering from source and production-safe metadata.
 - [x] Identified variable sync-banner height as the vertical layout shift.
 - [x] Received owner approval for the proposed design.
-- [ ] Write and review the implementation plan.
+- [x] Wrote and reviewed the implementation plan.
 - [ ] Implement through focused RED/GREEN tests.
 - [ ] Build, sign, verify, merge, push, and provide the updated APK.

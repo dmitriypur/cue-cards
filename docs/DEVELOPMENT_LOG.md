@@ -271,3 +271,6 @@
 - Production mobile build passed with 189 transformed modules. Signed `npm run android:release` completed Vite, Capacitor, R8, lint, and `assembleRelease` successfully with 360 executed Gradle tasks.
 - `apksigner` verified one RSA-4096 APK Signature Scheme v2 signer. APK metadata is `app.cuecards.mobile` version code 1/name 1.0, the embedded origin is `https://cue-cards.web-func.ru`, and SHA-256 is `cb76d200274d11d1d91e3cb58578d8bf172507afc850d13550cecf1e25c65b73`.
 - No Android device was connected, so installation was not attempted. The already persisted conflict remains a one-time explicit choice of the server version after updating the installed app.
+- Committed the implementation as `d154eec`, merged Task 16 into `main` as `809d231`, and pushed. GitHub Actions run `31414668103` passed API, PostgreSQL 16, Mobile, Mobile E2E, Android debug, and Deploy API for the exact merge SHA; production HTTPS `/up` returned 200 afterward.
+- Copied the verified 21,011,232-byte APK to the stable ignored artifact path `/Users/dmitriypur/Desktop/LARAVEL_PROJECTS/cue-cards/apps/mobile/android/app/build/outputs/apk/release/app-release.apk` with the same SHA-256.
+- Task 016 is complete. No backup, restore drill, Redis, Horizon, or production-hardening work was added.

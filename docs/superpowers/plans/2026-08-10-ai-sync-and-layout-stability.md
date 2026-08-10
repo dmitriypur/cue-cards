@@ -86,4 +86,4 @@
 - [x] Verify embedded production URL, package metadata, `apksigner verify --verbose --print-certs`, and SHA-256.
 - [x] Check `adb devices`; install with `adb install -r` only if connected.
 - [x] Record exact evidence in Task 16 and the development log, inspect `git status --short`, and commit the implementation.
-- [ ] Merge `codex/task-016-sync-generation-stability` into `main`, push, wait for the exact-SHA GitHub deploy, and provide the APK path plus one-time existing-conflict instruction.
+- [x] Merge `codex/task-016-sync-generation-stability` into `main`, push, wait for the exact-SHA GitHub deploy, and provide the APK path plus one-time existing-conflict instruction.

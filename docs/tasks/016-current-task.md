@@ -20,7 +20,7 @@ Prevent AI-start version gaps from producing false conflicts, keep real conflict
 - [x] Received owner approval for the proposed design.
 - [x] Wrote and reviewed the implementation plan.
 - [x] Implemented through focused RED/GREEN tests.
-- [x] Built and verified the signed update APK. Merge/push evidence is recorded after integration.
+- [x] Built and verified the signed update APK; merged as `809d231`, pushed to `main`, and deployed by successful GitHub Actions run `31414668103`.
 
 ## Implementation
 
@@ -44,3 +44,5 @@ Prevent AI-start version gaps from producing false conflicts, keep real conflict
 - `adb devices -l` returned no connected device, so installation was not attempted.
 
 The conflict already stored on the installed device is intentionally not auto-resolved. After installing the update over the existing app, choose the server version once; the production aggregate contains ready cues for all 10 cards.
+
+GitHub Actions completed all six jobs successfully for exact merge SHA `809d23117288467ce01b0460480c6a2a91d4164e`, including `Deploy API`; the post-deploy production `/up` check returned HTTP 200.

@@ -1,5 +1,19 @@
 apply plugin: 'com.android.application'
 
+def releasePropertiesPath = System.getenv('CUE_CARDS_KEY_PROPERTIES')
+def releasePropertiesFile = releasePropertiesPath ? file(releasePropertiesPath) : rootProject.file('key.properties')
+def releaseProperties = new Properties()
+def hasReleaseSigning = releasePropertiesFile.exists()
+
+if (hasReleaseSigning) {
+    releasePropertiesFile.withInputStream { releaseProperties.load(it) }
+}
+
+def configuredStoreFile = hasReleaseSigning ? new File(releaseProperties['storeFile']) : null
+def releaseStoreFile = configuredStoreFile?.isAbsolute()
+    ? configuredStoreFile
+    : configuredStoreFile ? new File(releasePropertiesFile.parentFile, configuredStoreFile.path) : null
+
 android {
     namespace = "app.cuecards.mobile"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,9 +30,23 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                storeFile releaseStoreFile
+                storePassword releaseProperties['storePassword']
+                keyAlias releaseProperties['keyAlias']
+                keyPassword releaseProperties['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
-            minifyEnabled false
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }

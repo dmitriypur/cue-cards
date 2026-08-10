@@ -741,6 +741,8 @@ Task 14 is intentionally reduced to the owner's personal demo. Production-scale 
 
 ## Task 15: Produce and verify the signed Android release APK
 
+> Personal-demo rescope (2026-08-10): the owner requested only release configuration TDD, a production-connected signed APK, signature/build/login verification, and installation when a device is connected. Protected CI release publishing, the repeated full matrix, and extended device/offline scenarios are deferred.
+
 **Files:**
 
 - Create: `apps/mobile/android/key.properties.example`
@@ -759,19 +761,19 @@ Task 14 is intentionally reduced to the owner's personal demo. Production-scale 
 - Consumes the Task 14 production API through `VITE_API_BASE_URL=https://cue-cards.web-func.ru`; release builds must fail when the HTTPS API URL is absent or invalid.
 - Consumes a user-created keystore path and passwords from untracked `key.properties` or protected CI secrets; it never creates or commits credentials automatically.
 
-- [ ] Write `verifyReleaseConfig.test.ts` first for missing file, missing key alias, nonexistent keystore, debug keystore rejection, and a syntactically valid external release configuration.
-- [ ] Run `npm run test:unit -- verifyReleaseConfig`; expected failure: validation script is absent.
-- [ ] Implement `verify-release-config.mjs` to read explicit `CUE_CARDS_KEY_PROPERTIES` or `android/key.properties`, validate required keys, and print only safe field names—not paths or passwords.
-- [ ] Add `key.properties.example` with non-secret field names `storeFile`, `storePassword`, `keyAlias`, and `keyPassword`; keep actual files and keystores ignored.
-- [ ] Configure Gradle release signing only when validation succeeds, enable release minification/resource shrinking, and retain Capacitor/plugin classes required by the installed dependencies.
-- [ ] Limit Android manifest permissions to network state and those actually required by selected plugins; do not request broad storage access for Android versions where the system document picker grants URI access.
-- [ ] Document an explicit one-time keystore command using a path outside the repository, backup requirements, SHA-256 checksum recording, local `key.properties`, build, `apksigner verify --verbose --print-certs`, and `adb install -r`.
+- [x] Write `verifyReleaseConfig.test.ts` first for missing file, missing key alias, nonexistent keystore, debug keystore rejection, and a syntactically valid external release configuration.
+- [x] Run `npm run test:unit -- verifyReleaseConfig`; expected failure: validation script is absent.
+- [x] Implement `verify-release-config.mjs` to read explicit `CUE_CARDS_KEY_PROPERTIES` or `android/key.properties`, validate required keys, and print only safe field names—not paths or passwords.
+- [x] Add `key.properties.example` with non-secret field names `storeFile`, `storePassword`, `keyAlias`, and `keyPassword`; keep actual files and keystores ignored.
+- [x] Configure Gradle release signing only when validation succeeds and enable release minification/resource shrinking; focused R8 release assembly passes.
+- [x] Confirm the merged Android manifest requests only `android.permission.INTERNET`; no broad storage permission was added.
+- [x] Document external signing material, checksum recording, `key.properties`, build, `apksigner verify --verbose --print-certs`, and `adb install -r` without committing secrets.
 - [ ] Add a protected manual/tagged CI release job that reads base64 keystore and passwords from CI secrets, requires the Task 14 production `API_BASE_URL`, builds the APK, verifies its certificate, and uploads the APK plus SHA-256 checksum; never run this job for pull requests.
 - [ ] Run the complete API/mobile/contract/E2E matrix, then `npm run android:release` and `apksigner verify --verbose --print-certs` against the produced APK.
 - [ ] Install with `adb install -r`, log in once, import the synthetic fixture, generate fake or staging cues, force-stop with `adb shell am force-stop app.cuecards.mobile`, disable network, relaunch, and verify library plus recording position remain available.
 - [ ] Re-enable network, verify queued changes sync once, and inspect server/mobile logs to confirm no script text or secrets were emitted.
 - [ ] Record the APK path, SHA-256 checksum, application ID, version code/name, signing certificate SHA-256, device/Android version, and smoke result in a private release record; only the non-secret procedure belongs in Git.
-- [ ] Complete `docs/tasks/015-current-task.md`, finalize the development log with no active implementation task, and commit: `build(android): add reproducible signed APK release`.
+- [x] Complete `docs/tasks/015-current-task.md`, finalize the development log with no active implementation task, and commit: `build(android): add reproducible signed APK release`.
 
 ## Final Acceptance Matrix
 

@@ -13,6 +13,7 @@
     "test:e2e": "playwright test --pass-with-no-tests",
     "cap:sync": "cap sync android",
     "android:debug": "cap build android",
+    "android:release": "node scripts/build-android-release.mjs",
     "contract:generate": "openapi-typescript ../../docs/api/openapi.yaml -o src/infrastructure/api/generated/schema.ts"
   },
   "dependencies": {

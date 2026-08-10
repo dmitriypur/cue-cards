@@ -1,0 +1,5 @@
+# Copy this file outside Git and point CUE_CARDS_KEY_PROPERTIES at it.
+storeFile=/absolute/path/to/cue-cards-release.jks
+storePassword=replace-with-a-secret
+keyAlias=cue-cards-release
+keyPassword=replace-with-a-secret

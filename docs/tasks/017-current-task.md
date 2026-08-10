@@ -19,7 +19,7 @@ Ship the owner's locally adjusted compact Android layout without changing applic
 - [x] Reviewed the owner's four modified Vue components.
 - [x] Confirmed three focused tests failed only because they still described the previous layout.
 - [x] Updated those component contracts to the approved local visual state.
-- [x] Completed focused verification and produced the signed APK; integration evidence is recorded after merge/push.
+- [x] Completed focused verification and signed APK, merged as `1c48c81`, corrected the CI accessibility finding as `e80ad30`, and pushed to `main`.
 
 ## Verification evidence
 
@@ -32,3 +32,4 @@ Ship the owner's locally adjusted compact Android layout without changing applic
 - APK metadata remains `app.cuecards.mobile`, version code `1`, version name `1.0`; the embedded origin is `https://cue-cards.web-func.ru`.
 - Final APK size: 21,011,164 bytes. SHA-256: `49f8161d51873476d172a5476d8db791f90e700e9909e0ff32f2a8dfbd68aa6d`.
 - `adb devices -l` found no connected device, so installation was not attempted.
+- GitHub Actions run `31420501146` passed all six jobs for exact SHA `e80ad3038f9e9ba27c4f31c9d424b63ce0eede7a`, including Mobile E2E and Deploy API; production HTTPS `/up` returned 200 afterward.

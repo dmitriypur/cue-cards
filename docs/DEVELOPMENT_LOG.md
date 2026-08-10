@@ -282,4 +282,6 @@
 - GitHub's first Mobile E2E job reproduced a 44.8px synchronization action at 320px with enlarged text. Restored only the action's 48px minimum touch target while preserving the owner's compact 48px banner; the complete local E2E suite then passed 3/3.
 - Final signed production release passed Vite build (189 modules), Capacitor sync, R8/lint, and Android `assembleRelease` with 360 tasks (38 executed, 322 up-to-date).
 - The APK retains production origin `https://cue-cards.web-func.ru`, application ID `app.cuecards.mobile`, version code 1/name 1.0, and the existing RSA-4096 APK Signature Scheme v2 signer. Final size is 21,011,164 bytes; SHA-256 is `49f8161d51873476d172a5476d8db791f90e700e9909e0ff32f2a8dfbd68aa6d`.
-- No Android device was connected, so installation was not attempted. Task 017 is ready to commit, merge, and push.
+- No Android device was connected, so installation was not attempted.
+- Committed the owner's visual increment as `d983f85`, merged it into `main` as `1c48c81`, and pushed. The first run `31419911389` exposed the accessibility regression while all other jobs passed; the focused correction was committed as `e80ad30` and pushed.
+- GitHub Actions run `31420501146` then passed all six jobs for exact SHA `e80ad3038f9e9ba27c4f31c9d424b63ce0eede7a`, including Mobile E2E and Deploy API. Production HTTPS `/up` returned 200. Task 017 is complete.

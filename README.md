@@ -59,3 +59,5 @@ cd android
 ```
 
 End-to-end browser journeys run through `npm run test:e2e`. The canonical API contract is `docs/api/openapi.yaml`; regenerate the committed mobile transport types with `npm run contract:generate` from `apps/mobile`.
+
+The minimal personal/demo API server setup and GitHub auto-deploy are documented in [`docs/API_DEPLOYMENT.md`](docs/API_DEPLOYMENT.md).

@@ -113,7 +113,7 @@ describe('SyncStatusBanner', () => {
       await wrapper.vm.$nextTick()
       expect(banner.classes()).toEqual(expect.arrayContaining([
         'grid',
-        'min-h-16',
+        'min-h-12',
         'grid-cols-[minmax(0,1fr)_auto]',
         'items-center',
         'gap-2',

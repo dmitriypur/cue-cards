@@ -274,3 +274,11 @@
 - Committed the implementation as `d154eec`, merged Task 16 into `main` as `809d231`, and pushed. GitHub Actions run `31414668103` passed API, PostgreSQL 16, Mobile, Mobile E2E, Android debug, and Deploy API for the exact merge SHA; production HTTPS `/up` returned 200 afterward.
 - Copied the verified 21,011,232-byte APK to the stable ignored artifact path `/Users/dmitriypur/Desktop/LARAVEL_PROJECTS/cue-cards/apps/mobile/android/app/build/outputs/apk/release/app-release.apk` with the same SHA-256.
 - Task 016 is complete. No backup, restore drill, Redis, Horizon, or production-hardening work was added.
+
+## 2026-08-10 — Task 017: owner-adjusted personal-demo visual polish
+
+- Preserved the owner's local changes across four Vue components: removed the redundant shell header, reduced shell horizontal padding, shortened the stable synchronization banner, expanded the recording setup selector, and gave recording content more usable screen area with tighter typography/padding.
+- The initial focused component run produced three expected failures because tests still described the previous header/banner/recording-height contract. Updated those focused contracts without changing behavior; the final focused run passed 17 tests in 3 files and strict typecheck passed.
+- Signed production release passed Vite build (189 modules), Capacitor sync, R8/lint, and Android `assembleRelease` with 360 tasks (352 executed, 8 up-to-date).
+- The APK retains production origin `https://cue-cards.web-func.ru`, application ID `app.cuecards.mobile`, version code 1/name 1.0, and the existing RSA-4096 APK Signature Scheme v2 signer. Size is 21,011,172 bytes; SHA-256 is `5b92e21f7a0f99c32b4146a9c1497e8ddf71accd8ec49df7a2adbd00ea588657`.
+- No Android device was connected, so installation was not attempted. Task 017 is ready to commit, merge, and push.

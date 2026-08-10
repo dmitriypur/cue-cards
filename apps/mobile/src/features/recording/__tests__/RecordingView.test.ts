@@ -164,6 +164,7 @@ describe('RecordingView', () => {
     const wrapper = await mountRecording(context.dependencies)
 
     expect(wrapper.get('h1').text()).toBe('Настройка записи')
+    expect(wrapper.get('[aria-label="Начальная карточка"]').classes()).toContain('w-full')
     await wrapper.get('[aria-label="Начальная карточка"]').setValue('card-b')
     await wrapper.get('button[aria-label="Полный текст по умолчанию"]').trigger('click')
     await wrapper.get('[aria-label="Размер текста"]').setValue('1.4')
@@ -196,8 +197,9 @@ describe('RecordingView', () => {
     const previous = wrapper.get('button[aria-label="Предыдущая карточка"]')
     const next = wrapper.get('button[aria-label="Следующая карточка"]')
     expect(wrapper.get('[data-focus-card]').classes()).toContain('overflow-hidden')
-    expect(wrapper.get('[data-focus-card]').classes()).toContain('h-[calc(100dvh-13rem)]')
+    expect(wrapper.get('[data-focus-card]').classes()).toContain('h-full')
     expect(wrapper.get('[data-recording-content]').classes()).toContain('overflow-y-auto')
+    expect(wrapper.get('[data-recording-content]').classes()).not.toContain('p-5')
     expect(previous.classes()).toContain('min-h-12')
     expect(next.classes()).toContain('min-w-12')
 

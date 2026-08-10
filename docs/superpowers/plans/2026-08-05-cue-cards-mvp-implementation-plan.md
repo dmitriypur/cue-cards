@@ -734,10 +734,10 @@ Task 14 is intentionally reduced to the owner's personal demo. Production-scale 
 - [x] Add a direct GitHub SSH deploy job for every push to `main`; it does not wait for CI jobs and does not build the mobile client on the server.
 - [x] Deploy with `git fetch/reset`, production Composer install, `migrate --force`, Laravel caches, runtime permissions, PHP-FPM/worker restart, Nginx validation/reload, and HTTPS `/up` smoke.
 - [x] Document minimal GitHub secrets, server checkout, PostgreSQL, `.env`, Nginx TLS, Supervisor worker, and one-time superadmin setup.
-- [ ] Create/connect the GitHub repository and configure `HOST`, `PORT`, `USERNAME`, `SSH_KEY`, `APP_DIR`, and `API_BASE_URL`.
-- [ ] Provision the server, push `main`, and verify `/up`, login, sync, and one AI generation without printing credentials or tokens.
-- [ ] Commit and merge Task 14, then start Task 15 for the owner's APK.
-- [ ] Commit: `build(api): add demo deployment workflow`.
+- [x] Create/connect the GitHub repository and configure `HOST`, `PORT`, `USERNAME`, `SSH_KEY`, `APP_DIR`, and `API_BASE_URL`.
+- [x] Provision the server, push `main`, and verify `/up`, login, sync, and one AI generation without printing credentials or tokens.
+- [x] Commit and merge Task 14, then start Task 15 for the owner's APK.
+- [x] Commit: `build(api): add demo deployment workflow`.
 
 ## Task 15: Produce and verify the signed Android release APK
 

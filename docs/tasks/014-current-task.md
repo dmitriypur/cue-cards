@@ -1,6 +1,6 @@
 # Task 014 — personal demo API deployment
 
-**Status:** In progress on `codex/task-014-production-api-deploy`
+**Status:** Complete; merged into `main` as `63ef599` and deployed
 
 ## Required outcome
 
@@ -33,11 +33,12 @@ This is a personal demo deployment. Backup automation, restore drills, protected
 - [x] Verified the deployed commit, production environment, disabled debug mode, PostgreSQL migrations, database queue, running `ai` worker, and trusted HTTPS `/up` response.
 - [x] Reproduced and fixed the plain-client API authentication failure: unauthenticated `/api/v1/me` now has a focused regression test requiring the stable 401 JSON envelope instead of a missing web-login redirect.
 - [x] Diagnosed the first public GitHub run without repeating tests: API and PostgreSQL jobs passed; mobile jobs stopped at `npm ci` because the lock omitted the required `eslint` peer. Added the exact dev dependency and verified a clean install.
-- [ ] Push the deploy workflow to `main`, then verify login, sync, and one AI generation.
-- [ ] Commit and merge Task 14; then start Task 15 for the personal APK.
+- [x] Pushed the deploy workflow to `main`; GitHub Actions run `31369946328` completed API, PostgreSQL, mobile, E2E, Android debug, and Deploy API jobs successfully.
+- [x] Verified production login, sync, sync idempotency, one supervised DeepSeek generation, 3–5 cues, matching source hash, preserved full text, sanitized logs, and smoke-data cleanup.
+- [x] Committed Task 14 as `4f61b99`, merged into `main` as `63ef599`, pushed, and confirmed the server checkout at the exact merge commit.
 
 ## Scope guard
 
-- Do not start Android signing or Task 15 before the demo API is reachable.
+- Task 15 may now start against the verified demo API.
 - Do not print or commit `.env`, passwords, tokens, API keys, SSH keys, or signing material.
 - Do not add Redis, Horizon, billing, public registration, backup automation, or restore drills to this demo task.

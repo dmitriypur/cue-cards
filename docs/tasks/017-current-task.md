@@ -26,8 +26,9 @@ Ship the owner's locally adjusted compact Android layout without changing applic
 - Focused pre-update component run reproduced 3 stale visual-contract failures: removed header, `min-h-12` banner, and `h-full` recording card.
 - Updated only those contracts plus the full-width recording selector and removed content padding; `npm run test:unit -- RecordingView ConflictResolutionView AppShell` passed 17/17.
 - `npm run typecheck` passed.
-- `npm run android:release` passed strict build, Vite production build (189 modules), Capacitor sync, Android lint/R8, and `assembleRelease` (360 tasks; 352 executed, 8 up-to-date).
+- The first CI/local E2E run caught a 44.8px sync action under enlarged text. Keeping the 48px banner, its actions now retain 48px minimum touch height; the complete `npm run test:e2e` run then passed 3/3.
+- Final `npm run android:release` passed strict build, Vite production build (189 modules), Capacitor sync, Android lint/R8, and `assembleRelease` (360 tasks; 38 executed, 322 up-to-date).
 - `apksigner verify --verbose --print-certs` verified APK Signature Scheme v2 with the existing RSA-4096 personal-demo signer.
 - APK metadata remains `app.cuecards.mobile`, version code `1`, version name `1.0`; the embedded origin is `https://cue-cards.web-func.ru`.
-- APK size: 21,011,172 bytes. SHA-256: `5b92e21f7a0f99c32b4146a9c1497e8ddf71accd8ec49df7a2adbd00ea588657`.
+- Final APK size: 21,011,164 bytes. SHA-256: `49f8161d51873476d172a5476d8db791f90e700e9909e0ff32f2a8dfbd68aa6d`.
 - `adb devices -l` found no connected device, so installation was not attempted.

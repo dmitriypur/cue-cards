@@ -279,6 +279,7 @@
 
 - Preserved the owner's local changes across four Vue components: removed the redundant shell header, reduced shell horizontal padding, shortened the stable synchronization banner, expanded the recording setup selector, and gave recording content more usable screen area with tighter typography/padding.
 - The initial focused component run produced three expected failures because tests still described the previous header/banner/recording-height contract. Updated those focused contracts without changing behavior; the final focused run passed 17 tests in 3 files and strict typecheck passed.
-- Signed production release passed Vite build (189 modules), Capacitor sync, R8/lint, and Android `assembleRelease` with 360 tasks (352 executed, 8 up-to-date).
-- The APK retains production origin `https://cue-cards.web-func.ru`, application ID `app.cuecards.mobile`, version code 1/name 1.0, and the existing RSA-4096 APK Signature Scheme v2 signer. Size is 21,011,172 bytes; SHA-256 is `5b92e21f7a0f99c32b4146a9c1497e8ddf71accd8ec49df7a2adbd00ea588657`.
+- GitHub's first Mobile E2E job reproduced a 44.8px synchronization action at 320px with enlarged text. Restored only the action's 48px minimum touch target while preserving the owner's compact 48px banner; the complete local E2E suite then passed 3/3.
+- Final signed production release passed Vite build (189 modules), Capacitor sync, R8/lint, and Android `assembleRelease` with 360 tasks (38 executed, 322 up-to-date).
+- The APK retains production origin `https://cue-cards.web-func.ru`, application ID `app.cuecards.mobile`, version code 1/name 1.0, and the existing RSA-4096 APK Signature Scheme v2 signer. Final size is 21,011,164 bytes; SHA-256 is `49f8161d51873476d172a5476d8db791f90e700e9909e0ff32f2a8dfbd68aa6d`.
 - No Android device was connected, so installation was not attempted. Task 017 is ready to commit, merge, and push.

@@ -25,6 +25,14 @@ export const useEditorStore = defineStore('editor', {
         this.error = 'Не удалось открыть локальный сценарий.'
       }
     },
+    async refresh(scriptId: string, dependencies: EditorDependencies): Promise<void> {
+      this.error = null
+      try {
+        this.script = await dependencies.readScript.execute(scriptId)
+      } catch {
+        this.error = 'Не удалось обновить локальный сценарий.'
+      }
+    },
     markPending(): void {
       this.saveStatus = 'pending'
     },

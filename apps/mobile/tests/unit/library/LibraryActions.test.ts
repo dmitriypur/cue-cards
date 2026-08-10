@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { GetScript } from '@/application/scripts/GetScript'
 import { ListScripts } from '@/application/scripts/ListScripts'
+import { ReadScript } from '@/application/scripts/ReadScript'
 import type { ScriptRepository } from '@/application/ports/ScriptRepository'
 import type { ScriptAggregate, ScriptSummary } from '@/domain/scripts/types'
 
@@ -87,6 +88,25 @@ describe('library application actions', () => {
     expect(save.execute).toHaveBeenCalledWith({
       aggregate: expect.objectContaining({ id: aggregate.id, lastOpenedAt: '2026-08-06T10:00:00.000Z' }),
     })
+  })
+
+  it('reads a script for refresh without persisting another aggregate snapshot', async () => {
+    const scripts = repository()
+    const action = new ReadScript(scripts)
+
+    await expect(action.execute(aggregate.id)).resolves.toBe(aggregate)
+    expect(scripts.get).toHaveBeenCalledWith(aggregate.id)
+    expect(scripts.save).not.toHaveBeenCalled()
+  })
+
+  it('rejects a missing or deleted script during a read-only refresh', async () => {
+    const missing = new ReadScript(repository({ get: vi.fn().mockResolvedValue(null) }))
+    const deleted = new ReadScript(repository({
+      get: vi.fn().mockResolvedValue({ ...aggregate, deletedAt: '2026-08-06T09:30:00.000Z' }),
+    }))
+
+    await expect(missing.execute('missing')).rejects.toThrow('Script not found')
+    await expect(deleted.execute(aggregate.id)).rejects.toThrow('Script not found')
   })
 
   it('rejects a missing or deleted script without persisting it', async () => {

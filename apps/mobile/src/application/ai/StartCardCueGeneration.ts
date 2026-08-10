@@ -87,6 +87,14 @@ export class StartCardCueGeneration {
     }
     const generation = await this.gateway.startCard(input.cardId, replaceManual, operationId)
     await this.requests.markStarted(scopeKey, generation.id)
+    const refreshed = await this.dependencies.sync.execute('manual')
+    if (refreshed.state === 'auth-required') {
+      return { state: 'auth-required', generation: null }
+    }
+    if (refreshed.state === 'conflict') return { state: 'conflict', generation: null }
+    if (refreshed.state !== 'up-to-date') {
+      return { state: 'waiting-for-network', generation: null }
+    }
     return { state: 'tracking', generation }
   }
 }

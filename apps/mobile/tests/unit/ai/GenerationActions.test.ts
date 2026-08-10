@@ -103,6 +103,7 @@ class MemoryHarness {
   public startError: Error | null = null
   public generation = queuedGeneration
   public syncState: 'up-to-date' | 'retrying' | 'auth-required' | 'conflict' = 'up-to-date'
+  public readonly syncStates: Array<typeof this.syncState> = []
   public readonly requestRows = new Map<string, AiGenerationRequest>()
   public readonly startedOperations: string[] = []
 
@@ -129,7 +130,7 @@ class MemoryHarness {
   public readonly sync = {
     execute: async () => {
       this.events.push('sync')
-      return { state: this.syncState, uploaded: 1, downloaded: 0 }
+      return { state: this.syncStates.shift() ?? this.syncState, uploaded: 1, downloaded: 0 }
     },
   }
 
@@ -216,7 +217,7 @@ describe('AI generation actions', () => {
     const result = await action.execute(scriptId)
 
     expect(result).toEqual({ state: 'tracking', generation: queuedGeneration })
-    expect(harness.events).toEqual(['save', 'sync', 'start-script'])
+    expect(harness.events).toEqual(['save', 'sync', 'start-script', 'sync'])
     expect(harness.requestRows.get(`script:${scriptId}`)?.generationId).toBe(queuedGeneration.id)
   })
 
@@ -235,7 +236,7 @@ describe('AI generation actions', () => {
     const result = await action.execute({ scriptId, cardId: firstCardId })
 
     expect(result.state).toBe('tracking')
-    expect(harness.events).toEqual(['save', 'sync', `start-card:${firstCardId}:false`])
+    expect(harness.events).toEqual(['save', 'sync', `start-card:${firstCardId}:false`, 'sync'])
     expect(harness.script.cards[0]?.cueSet.status).toBe('pending')
     expect(harness.script.cards[1]?.cueSet.status).toBe('stale')
     expect(harness.script.cards[0]?.fullText).toBe(fullText)
@@ -261,6 +262,33 @@ describe('AI generation actions', () => {
 
     expect(result).toEqual({ state: expectedState, generation: null })
     expect(harness.events).toEqual(['save', 'sync'])
+  })
+
+  it.each([
+    ['retrying', 'waiting-for-network'],
+    ['auth-required', 'auth-required'],
+    ['conflict', 'conflict'],
+  ] as const)('retains a started generation when post-start sync is %s', async (
+    postStartState,
+    expectedState,
+  ) => {
+    const harness = new MemoryHarness()
+    harness.syncStates.push('up-to-date', postStartState)
+    const action = new StartScriptCueGeneration(
+      harness.scripts,
+      harness.saver,
+      harness.connectivity,
+      harness.sync,
+      harness.gateway,
+      harness.requests,
+    )
+
+    const result = await action.execute(scriptId)
+
+    expect(result).toEqual({ state: expectedState, generation: null })
+    expect(harness.events).toEqual(['save', 'sync', 'start-script', 'sync'])
+    expect(harness.requestRows.get(`script:${scriptId}`)?.generationId)
+      .toBe(queuedGeneration.id)
   })
 
   it('keeps the locally saved script usable when authentication fails', async () => {
@@ -386,6 +414,7 @@ describe('AI generation actions', () => {
     expect(harness.events).toEqual([
       'sync',
       `start-card:${firstCardId}:false`,
+      'sync',
     ])
     expect(harness.requestRows.get(`card:${firstCardId}`)?.generationId)
       .toBe(queuedGeneration.id)

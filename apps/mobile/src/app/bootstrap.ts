@@ -24,6 +24,7 @@ import { GetScript } from '@/application/scripts/GetScript'
 import { ListScripts } from '@/application/scripts/ListScripts'
 import { MergeCards } from '@/application/scripts/MergeCards'
 import { ReorderCards } from '@/application/scripts/ReorderCards'
+import { ReadScript } from '@/application/scripts/ReadScript'
 import { SaveScriptAggregate } from '@/application/scripts/SaveScriptAggregate'
 import { SplitCard } from '@/application/scripts/SplitCard'
 import { UpdateCard } from '@/application/scripts/UpdateCard'
@@ -160,6 +161,7 @@ export async function bootstrapApp(): Promise<void> {
     }
     editorDependencies = {
       getScript: new GetScript(scripts, saveAggregate),
+      readScript: new ReadScript(scripts),
       updateCard: new UpdateCard(scripts, saveAggregate, clock),
       reorderCards: new ReorderCards(scripts, saveAggregate, clock),
       splitCard: new SplitCard(scripts, saveAggregate, clock),
@@ -292,6 +294,7 @@ export async function bootstrapApp(): Promise<void> {
     }
     editorDependencies = {
       getScript: new GetScript(scripts, saveAggregate),
+      readScript: new ReadScript(scripts),
       updateCard: new UpdateCard(scripts, saveAggregate, clock),
       reorderCards: new ReorderCards(scripts, saveAggregate, clock),
       splitCard: new SplitCard(scripts, saveAggregate, clock),

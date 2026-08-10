@@ -103,6 +103,24 @@ describe('ConflictResolutionView', () => {
 describe('SyncStatusBanner', () => {
   beforeEach(() => setActivePinia(createPinia()))
 
+  it('keeps one stable banner row while synchronization status changes', async () => {
+    const store = useSyncStore()
+    const wrapper = mount(SyncStatusBanner)
+    const banner = wrapper.get('[role="status"]')
+
+    for (const state of ['syncing', 'up-to-date', 'conflict'] as const) {
+      store.state = state
+      await wrapper.vm.$nextTick()
+      expect(banner.classes()).toEqual(expect.arrayContaining([
+        'grid',
+        'min-h-16',
+        'grid-cols-[minmax(0,1fr)_auto]',
+        'items-center',
+        'gap-2',
+      ]))
+    }
+  })
+
   it('renders every explicit synchronization state with a status role', async () => {
     const store = useSyncStore()
     const wrapper = mount(SyncStatusBanner)

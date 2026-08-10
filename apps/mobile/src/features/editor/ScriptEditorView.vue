@@ -72,7 +72,7 @@ watch(
       (status === 'completed' || status === 'failed') && status !== previous?.[index]
     ))
     if (reachedTerminal && dependencies !== null) {
-      await store.load(props.scriptId, dependencies)
+      await store.refresh(props.scriptId, dependencies)
     }
   },
 )
@@ -188,7 +188,7 @@ async function generateScriptCues(): Promise<void> {
   if (dependencies === null || aiDependencies === null) return
   await flushAll()
   await aiCues.startScript(props.scriptId, aiDependencies)
-  await store.load(props.scriptId, dependencies)
+  await store.refresh(props.scriptId, dependencies)
 }
 
 async function regenerateCard(payload: {
@@ -203,7 +203,7 @@ async function regenerateCard(payload: {
     aiDependencies,
     payload.replaceManual,
   )
-  await store.load(props.scriptId, dependencies)
+  await store.refresh(props.scriptId, dependencies)
 }
 
 async function refreshCardGeneration(cardId: string): Promise<void> {
@@ -213,7 +213,7 @@ async function refreshCardGeneration(cardId: string): Promise<void> {
   } else {
     await aiCues.refreshScript(props.scriptId, aiDependencies)
   }
-  if (dependencies !== null) await store.load(props.scriptId, dependencies)
+  if (dependencies !== null) await store.refresh(props.scriptId, dependencies)
 }
 </script>
 

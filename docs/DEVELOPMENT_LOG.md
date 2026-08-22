@@ -300,3 +300,10 @@
 - Production checkout matched that SHA, trusted HTTPS `/up` returned 200, and `cue-cards-ai-worker` was RUNNING. The first invariant-complete live smoke revealed that the persistent production `.env` still overrode prompt version with 1; only that non-secret setting was updated to 2, Laravel config was rebuilt, and PHP-FPM plus the worker were restarted.
 - Final production smoke passed login 200 and supervised DeepSeek completion. A rich synthetic block produced 8 cues and a short block produced 1; the generation recorded prompt version 2, full text remained byte-for-byte unchanged, source hashes matched, every cue was unique/non-empty/within 200 characters, and the temporary superadmin plus cascaded data were removed.
 - The signed APK was copied to the stable ignored main-workspace path `apps/mobile/android/app/build/outputs/apk/release/app-release.apk`; SHA-256 remained `ef905b50dfe773e33cb0176c9ecd95db6599263cdc2f5502350e16aee06dea54`. No device was connected, so physical installation was not attempted. Task 018 is complete.
+
+## 2026-08-22 — Task 019: dismissible deletion notice (in progress)
+
+- Traced the permanent deletion snackbar to `LibraryView`: `pendingUndo` was cleared only by a successful undo and had neither a timeout nor a dismiss action.
+- Kept the existing soft-delete model unchanged. Deletion sets `deleted_at` locally and synchronizes the tombstoned snapshot; undo clears `deleted_at` and queues the restored snapshot.
+- Added a five-second auto-dismiss timer, a 48px accessible close control, timer reset for subsequent deletions, cancellation during undo, and unmount cleanup. Focused `LibraryView` verification passed 8/8 and strict typecheck passed.
+- Full mobile verification passed 218/218 unit tests, strict typecheck, and production build with 189 modules. Task 019 is complete pending integration.

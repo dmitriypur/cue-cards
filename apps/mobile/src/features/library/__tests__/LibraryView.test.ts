@@ -180,7 +180,8 @@ describe('LibraryView', () => {
     expect(wrapper.text()).toContain('Тезисы на устройстве: 5 из 5')
   })
 
-  it('requires confirmation, supports cancellation, and offers undo after deletion', async () => {
+  it('requires confirmation and keeps the deletion notice temporary and dismissible', async () => {
+    vi.useFakeTimers()
     const restored = [
       { ...summaries[1]!, updatedAt: '2026-08-06T11:00:00.000Z', syncStatus: 'pending' as const },
       summaries[0]!,
@@ -211,6 +212,20 @@ describe('LibraryView', () => {
     expect(list).toHaveBeenCalledTimes(2)
     expect(wrapper.find('[data-script-id="stale"]').exists()).toBe(true)
     expect(wrapper.findAll('[data-script-id]')[0]?.attributes('data-script-id')).toBe('stale')
+
+    await wrapper.get('[data-script-id="failed"] [data-action="delete"]').trigger('click')
+    await wrapper.get('[role="dialog"] [data-action="confirm"]').trigger('click')
+    await flushPromises()
+    await wrapper.get('[data-action="dismiss-delete-notice"]').trigger('click')
+    expect(wrapper.find('[data-testid="undo-snackbar"]').exists()).toBe(false)
+
+    await wrapper.get('[data-script-id="generating"] [data-action="delete"]').trigger('click')
+    await wrapper.get('[role="dialog"] [data-action="confirm"]').trigger('click')
+    await flushPromises()
+    vi.advanceTimersByTime(5_000)
+    await flushPromises()
+    expect(wrapper.find('[data-testid="undo-snackbar"]').exists()).toBe(false)
+    vi.useRealTimers()
   })
 
   it('keeps scripts visible and localizes an action failure', async () => {

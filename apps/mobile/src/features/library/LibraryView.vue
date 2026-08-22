@@ -20,6 +20,8 @@ const actionError = ref<string | null>(null)
 const scriptToDelete = ref<string | null>(null)
 const online = ref(dependencies?.isOnline() ?? false)
 const undoing = ref(false)
+const undoNoticeDurationMs = 5_000
+let undoDismissTimer: ReturnType<typeof setTimeout> | null = null
 const focusedIds = computed(() => new Set(
   (props.focus ?? '').split(',').map((id) => id.trim()).filter((id) => id.length > 0),
 ))
@@ -34,6 +36,25 @@ function refreshConnectivity(): void {
   online.value = dependencies?.isOnline() ?? false
 }
 
+function clearUndoDismissTimer(): void {
+  if (undoDismissTimer === null) return
+  clearTimeout(undoDismissTimer)
+  undoDismissTimer = null
+}
+
+function dismissDeleteNotice(): void {
+  clearUndoDismissTimer()
+  store.pendingUndo = null
+}
+
+function scheduleDeleteNoticeDismissal(): void {
+  clearUndoDismissTimer()
+  undoDismissTimer = setTimeout(() => {
+    store.pendingUndo = null
+    undoDismissTimer = null
+  }, undoNoticeDurationMs)
+}
+
 onMounted(async () => {
   window.addEventListener('online', refreshConnectivity)
   window.addEventListener('offline', refreshConnectivity)
@@ -43,9 +64,11 @@ onMounted(async () => {
     return
   }
   await store.load(dependencies.listScripts)
+  if (store.pendingUndo !== null) scheduleDeleteNoticeDismissal()
 })
 
 onUnmounted(() => {
+  clearUndoDismissTimer()
   window.removeEventListener('online', refreshConnectivity)
   window.removeEventListener('offline', refreshConnectivity)
 })
@@ -72,6 +95,7 @@ async function confirmDeletion(): Promise<void> {
   try {
     await dependencies.deleteScript.execute(scriptId)
     store.removeForUndo(scriptId)
+    scheduleDeleteNoticeDismissal()
   } catch {
     actionError.value = 'Не удалось удалить сценарий. Попробуйте ещё раз.'
   }
@@ -82,6 +106,7 @@ async function undoDeletion(): Promise<void> {
 
   actionError.value = null
   undoing.value = true
+  clearUndoDismissTimer()
   try {
     await dependencies.deleteScript.undo(store.pendingUndo.script.id)
     store.pendingUndo = null
@@ -157,15 +182,27 @@ async function undoDeletion(): Promise<void> {
       class="fixed inset-x-4 bottom-4 mx-auto flex max-w-md items-center justify-between gap-3 rounded-xl bg-surface p-4 text-surface-foreground shadow-xl"
     >
       <span>Сценарий удалён</span>
-      <button
-        type="button"
-        data-action="undo-delete"
-        class="min-h-12 rounded-md px-3 font-medium text-primary"
-        :disabled="undoing"
-        @click="undoDeletion"
-      >
-        Отменить
-      </button>
+      <div class="flex items-center gap-1">
+        <button
+          type="button"
+          data-action="undo-delete"
+          class="min-h-12 rounded-md px-3 font-medium text-primary"
+          :disabled="undoing"
+          @click="undoDeletion"
+        >
+          Отменить
+        </button>
+        <button
+          type="button"
+          data-action="dismiss-delete-notice"
+          aria-label="Закрыть уведомление"
+          class="min-h-12 min-w-12 rounded-md text-xl text-muted-foreground"
+          :disabled="undoing"
+          @click="dismissDeleteNotice"
+        >
+          ×
+        </button>
+      </div>
     </div>
 
     <ConfirmDialog

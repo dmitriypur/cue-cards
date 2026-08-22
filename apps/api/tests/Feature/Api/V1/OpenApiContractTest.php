@@ -85,7 +85,10 @@ class OpenApiContractTest extends TestCase
         $this->assertSame('uuid', $schemas['CardSnapshot']['properties']['script_id']['format']);
         $this->assertContains('card_id', $schemas['CueSetSnapshot']['required']);
         $this->assertSame('uuid', $schemas['CueSetSnapshot']['properties']['card_id']['format']);
-        $this->assertSame(200, $schemas['CueSetSnapshot']['properties']['cues']['items']['maxLength']);
+        $cues = $schemas['CueSetSnapshot']['properties']['cues'];
+        $this->assertArrayNotHasKey('maxItems', $cues);
+        $this->assertTrue($cues['uniqueItems']);
+        $this->assertSame(200, $cues['items']['maxLength']);
     }
 
     /** @return array<string, mixed> */

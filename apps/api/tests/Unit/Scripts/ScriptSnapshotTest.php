@@ -15,6 +15,8 @@ class ScriptSnapshotTest extends TestCase
 
         $this->assertSame('0198a70d-a717-70ae-a41d-905a2237bd18', $snapshot->id);
         $this->assertSame(1, $snapshot->cards[1]['position']);
+        $this->assertCount(6, $snapshot->cards[0]['cue_set']['cues']);
+        $this->assertCount(1, $snapshot->cards[1]['cue_set']['cues']);
         $this->assertSame($this->validSnapshot(), $snapshot->toArray());
     }
 
@@ -40,7 +42,8 @@ class ScriptSnapshotTest extends TestCase
         yield 'non-contiguous active positions' => [static fn (array &$p) => $p['cards'][1]['position'] = 2];
         yield 'wrong content hash' => [static fn (array &$p) => $p['cards'][0]['content_hash'] = str_repeat('0', 64)];
         yield 'ready cue source mismatch' => [static fn (array &$p) => $p['cards'][0]['cue_set']['source_hash'] = str_repeat('0', 64)];
-        yield 'ready cue count below three' => [static fn (array &$p) => $p['cards'][0]['cue_set']['cues'] = ['Один', 'Два']];
+        yield 'ready cue list is empty' => [static fn (array &$p) => $p['cards'][0]['cue_set']['cues'] = []];
+        yield 'duplicate cue' => [static fn (array &$p) => $p['cards'][0]['cue_set']['cues'][1] = $p['cards'][0]['cue_set']['cues'][0]];
         yield 'blank cue' => [static fn (array &$p) => $p['cards'][0]['cue_set']['cues'][1] = '   '];
         yield 'cue over 200 characters' => [static fn (array &$p) => $p['cards'][0]['cue_set']['cues'][1] = str_repeat('я', 201)];
         yield 'relative update timestamp' => [static fn (array &$p) => $p['updated_at'] = 'tomorrow'];
@@ -90,7 +93,9 @@ class ScriptSnapshotTest extends TestCase
                     ? '0198a70e-5670-704a-86bb-ced23df0704f'
                     : '0198a70e-5670-704a-86bb-ced23df0705f',
                 'card_id' => $id,
-                'cues' => ['Первый тезис', 'Второй тезис', 'Третий тезис'],
+                'cues' => $position === 0
+                    ? ['Мысль один', 'Мысль два', 'Мысль три', 'Мысль четыре', 'Мысль пять', 'Мысль шесть']
+                    : ['Единственная мысль'],
                 'source_hash' => $hash,
                 'status' => 'ready',
                 'generation_id' => null,

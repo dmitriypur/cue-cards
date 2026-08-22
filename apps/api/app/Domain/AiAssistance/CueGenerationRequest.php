@@ -6,12 +6,25 @@ use InvalidArgumentException;
 
 final readonly class CueGenerationRequest
 {
-    /** @param list<array{card_id: string, title: string, full_text: string, source_hash: string}> $cards */
-    private function __construct(public array $cards) {}
+    /**
+     * @param  list<array{card_id: string, title: string, full_text: string, source_hash: string}>  $cards
+     * @param  list<array{card_id: string, position: int, title: string}>  $outline
+     */
+    private function __construct(
+        public array $cards,
+        public string $scriptTitle,
+        public array $outline,
+    ) {}
 
-    /** @param list<array<string, mixed>> $cards */
-    public static function fromCards(array $cards): self
-    {
+    /**
+     * @param  list<array<string, mixed>>  $cards
+     * @param  list<array<string, mixed>>  $outline
+     */
+    public static function fromCards(
+        array $cards,
+        string $scriptTitle = 'Сценарий',
+        array $outline = [],
+    ): self {
         if ($cards === []) {
             throw new InvalidArgumentException('At least one card is required.');
         }
@@ -48,7 +61,38 @@ final readonly class CueGenerationRequest
             ];
         }
 
-        return new self($normalized);
+        $normalizedOutline = [];
+        $outlineIds = [];
+        foreach ($outline as $item) {
+            $id = $item['card_id'] ?? null;
+            $position = $item['position'] ?? null;
+            $title = $item['title'] ?? null;
+            if (! is_string($id) || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $id) !== 1) {
+                throw new InvalidArgumentException('Every outline card must have a valid UUID.');
+            }
+            if (isset($outlineIds[$id]) || ! is_int($position) || $position < 0 || ! is_string($title)) {
+                throw new InvalidArgumentException('Every outline card must have a unique ID, position, and title.');
+            }
+            $outlineIds[$id] = true;
+            $normalizedOutline[] = [
+                'card_id' => $id,
+                'position' => $position,
+                'title' => $title,
+            ];
+        }
+        if ($normalizedOutline === []) {
+            $normalizedOutline = array_map(
+                static fn (array $card, int $position): array => [
+                    'card_id' => $card['card_id'],
+                    'position' => $position,
+                    'title' => $card['title'],
+                ],
+                $normalized,
+                array_keys($normalized),
+            );
+        }
+
+        return new self($normalized, $scriptTitle, $normalizedOutline);
     }
 
     public function sourceHashFor(string $cardId): string

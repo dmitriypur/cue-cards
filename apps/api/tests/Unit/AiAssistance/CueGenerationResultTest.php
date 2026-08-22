@@ -10,18 +10,22 @@ use PHPUnit\Framework\TestCase;
 
 class CueGenerationResultTest extends TestCase
 {
-    public function test_accepts_every_expected_card_once_and_trims_cues(): void
+    public function test_accepts_one_and_more_than_five_cues_while_preserving_card_order(): void
     {
         $request = CueGenerationRequest::fromCards($this->requestCards());
 
         $result = CueGenerationResult::fromProviderResponse($request, [
             'cards' => [
-                ['card_id' => self::FIRST_CARD, 'cues' => [' Первый ', 'Второй', 'Третий']],
-                ['card_id' => self::SECOND_CARD, 'cues' => ['Четвёртый', 'Пятый', 'Шестой', 'Седьмой']],
+                ['card_id' => self::FIRST_CARD, 'cues' => [' Единственная опорная мысль ']],
+                ['card_id' => self::SECOND_CARD, 'cues' => [
+                    'Первая мысль', 'Вторая мысль', 'Третья мысль',
+                    'Четвёртая мысль', 'Пятая мысль', 'Шестая мысль',
+                ]],
             ],
         ], 200, 'provider-request-1', 120, 45);
 
-        $this->assertSame(['Первый', 'Второй', 'Третий'], $result->forCard(self::FIRST_CARD)->cues);
+        $this->assertSame(['Единственная опорная мысль'], $result->forCard(self::FIRST_CARD)->cues);
+        $this->assertCount(6, $result->forCard(self::SECOND_CARD)->cues);
         $this->assertSame(hash('sha256', 'Первый блок.'), $result->forCard(self::FIRST_CARD)->sourceHash);
         $this->assertSame('provider-request-1', $result->providerRequestId);
         $this->assertSame(120, $result->inputTokens);
@@ -69,8 +73,7 @@ class CueGenerationResultTest extends TestCase
         yield 'missing expected card' => [static fn (array &$response) => array_pop($response['cards'])];
         yield 'unknown card' => [static fn (array &$response) => $response['cards'][0]['card_id'] = '0198a70e-23a2-73df-8387-34636552839f'];
         yield 'duplicate card' => [static fn (array &$response) => $response['cards'][1]['card_id'] = self::FIRST_CARD];
-        yield 'fewer than three cues' => [static fn (array &$response) => $response['cards'][0]['cues'] = ['Один', 'Два']];
-        yield 'more than five cues' => [static fn (array &$response) => $response['cards'][0]['cues'] = ['1', '2', '3', '4', '5', '6']];
+        yield 'empty cue list' => [static fn (array &$response) => $response['cards'][0]['cues'] = []];
         yield 'blank cue' => [static fn (array &$response) => $response['cards'][0]['cues'][1] = '   '];
         yield 'duplicate normalized cue' => [static fn (array &$response) => $response['cards'][0]['cues'] = ['Один', ' Один ', 'Три']];
         yield 'overlong cue' => [static fn (array &$response) => $response['cards'][0]['cues'][1] = str_repeat('я', 21)];

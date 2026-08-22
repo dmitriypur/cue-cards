@@ -14,7 +14,13 @@ class LaravelAiCueGenerator implements CueGenerator
     public function generate(CueGenerationRequest $request): CueGenerationResult
     {
         $prompt = json_encode([
-            'task' => 'Создай 3–5 коротких тезисов для каждой карточки.',
+            'task' => implode(' ', [
+                'Сначала мысленно выдели все самостоятельные мысли в полном тексте каждой карточки.',
+                'Верни по одному короткому законченному тезису на каждую мысль в исходном порядке.',
+                'Не стремись к заданному количеству и не дроби одну мысль искусственно.',
+            ]),
+            'script_title' => $request->scriptTitle,
+            'outline' => $request->outline,
             'cards' => array_map(static fn (array $card): array => [
                 'card_id' => $card['card_id'],
                 'title' => $card['title'],

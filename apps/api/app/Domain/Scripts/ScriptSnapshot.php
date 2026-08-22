@@ -118,22 +118,28 @@ final readonly class ScriptSnapshot
 
         $status = self::requireEnum($cueSet['status'] ?? null, ['missing', 'pending', 'generating', 'ready', 'stale', 'failed'], 'cue status');
         $cues = $cueSet['cues'] ?? null;
-        if (! is_array($cues) || ! array_is_list($cues) || count($cues) > 5) {
-            throw new InvalidScriptSnapshot('Cues must be a list of at most five strings.');
+        if (! is_array($cues) || ! array_is_list($cues)) {
+            throw new InvalidScriptSnapshot('Cues must be a list of strings.');
         }
+        $normalizedCues = [];
         foreach ($cues as $cue) {
             self::requireString($cue, 'cue');
             if (mb_strlen($cue) > self::MAX_CUE_CHARACTERS) {
                 throw new InvalidScriptSnapshot('Cue must not exceed 200 characters.');
             }
+            $normalizedCue = trim($cue);
+            if (isset($normalizedCues[$normalizedCue])) {
+                throw new InvalidScriptSnapshot('Cues must be unique within a card.');
+            }
+            $normalizedCues[$normalizedCue] = true;
         }
 
         $sourceHash = $cueSet['source_hash'] ?? null;
         if ($sourceHash !== null) {
             new ContentHash(self::requireString($sourceHash, 'cue source hash'));
         }
-        if ($status === 'ready' && (count($cues) < 3 || $sourceHash !== $contentHash)) {
-            throw new InvalidScriptSnapshot('Ready cues require 3–5 entries matching the card content hash.');
+        if ($status === 'ready' && ($cues === [] || $sourceHash !== $contentHash)) {
+            throw new InvalidScriptSnapshot('Ready cues require at least one entry matching the card content hash.');
         }
         $generationId = $cueSet['generation_id'] ?? null;
         if ($generationId !== null) {

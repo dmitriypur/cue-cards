@@ -22,31 +22,30 @@
 
 ### Task 1: Adapt the server AI and sync contracts
 
-- [ ] Write failing domain, adapter, queue, and snapshot tests for one and six-plus cues plus script outline context.
-- [ ] Run focused tests and confirm failures identify the existing 3–5 validation and missing context.
-- [ ] Add outline-aware requests, prompt version 2, adaptive instructions, validation, and byte-aware batching.
-- [ ] Remove the OpenAPI `maxItems` constraint and regenerate the committed TypeScript contract.
-- [ ] Run focused API/contract suites and commit the server increment.
+- [x] Write failing domain, adapter, queue, and snapshot tests for one and six-plus cues plus script outline context.
+- [x] Run focused tests and confirm failures identify the existing 3–5 validation and missing context.
+- [x] Add outline-aware requests, prompt version 2, adaptive instructions, validation, and byte-aware batching.
+- [x] Remove the OpenAPI `maxItems` constraint and regenerate the committed TypeScript contract.
+- [x] Run focused API/contract suites and commit the server increment.
 
 ### Task 2: Adapt manual cue editing and offline readiness UI
 
-- [ ] Write failing action/component/repository tests for one and six-plus manual cues and `offlineReadyCardCount`.
-- [ ] Run focused mobile tests and confirm failures identify the current 3–5/UI limits and missing summary field.
-- [ ] Update domain types, SQLite/browser summaries, editor validation and controls, and library sync refresh.
-- [ ] Run focused mobile suites and commit the mobile increment.
+- [x] Write failing action/component/repository tests for one and six-plus manual cues and `offlineReadyCardCount`.
+- [x] Run focused mobile tests and confirm failures identify the current 3–5/UI limits and missing summary field.
+- [x] Update domain types, SQLite/browser summaries, editor validation and controls, and library sync refresh.
+- [x] Run focused mobile suites and commit the mobile increment.
 
 ### Task 3: Prove synchronized cues survive offline restart
 
-- [ ] Write a failing SQLite integration test for remote six-plus cues, cursor persistence, repository reconstruction, and offline read.
-- [ ] Extend the Playwright journey to display more than five cues after offline reload.
-- [ ] Implement only missing wiring revealed by the tests and rerun focused suites.
-- [ ] Commit the offline regression increment.
+- [x] Write a failing SQLite integration test for remote six-plus cues, cursor persistence, repository reconstruction, and offline read.
+- [x] Extend the Playwright journey to display more than five cues after offline reload.
+- [x] Implement only missing wiring revealed by the tests and rerun focused suites.
+- [x] Commit the offline regression increment.
 
 ### Task 4: Verify, deploy, and package
 
-- [ ] Run full API, Pint, OpenAPI drift, mobile unit, typecheck, build, E2E, Capacitor, and Android checks.
-- [ ] Update Android to version code 2/name 1.1 and build the production-connected signed APK.
+- [x] Run full API, Pint, OpenAPI drift, mobile unit, typecheck, build, E2E, Capacitor, and Android checks.
+- [x] Update Android to version code 2/name 1.1 and build the production-connected signed APK.
 - [ ] Merge to `main`, push, wait for exact-SHA CI/deploy, and run production health plus synthetic DeepSeek smoke.
 - [ ] Install/update and run the offline device smoke when ADB is available; otherwise record APK path, signature, and checksum.
 - [ ] Complete Task 018 and record exact evidence in `docs/DEVELOPMENT_LOG.md`.
-

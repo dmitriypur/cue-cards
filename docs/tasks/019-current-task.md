@@ -18,3 +18,4 @@ Keep soft-delete undo useful without leaving a permanent snackbar over the libra
 - Focused `LibraryView` suite passed 8/8 after reproducing the missing dismiss control.
 - Strict TypeScript checking passed.
 - Full mobile verification passed 218/218 unit tests, strict typecheck, and production build with 189 modules.
+- Android release advanced to version code 3/name 1.1.1 for an in-place update.

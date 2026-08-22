@@ -307,3 +307,4 @@
 - Kept the existing soft-delete model unchanged. Deletion sets `deleted_at` locally and synchronizes the tombstoned snapshot; undo clears `deleted_at` and queues the restored snapshot.
 - Added a five-second auto-dismiss timer, a 48px accessible close control, timer reset for subsequent deletions, cancellation during undo, and unmount cleanup. Focused `LibraryView` verification passed 8/8 and strict typecheck passed.
 - Full mobile verification passed 218/218 unit tests, strict typecheck, and production build with 189 modules. Task 019 is complete pending integration.
+- Advanced the installable Android patch release to version code 3/name 1.1.1 so Package Installer recognizes it as newer than Task 018.

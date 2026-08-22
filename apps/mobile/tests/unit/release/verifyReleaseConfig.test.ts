@@ -15,11 +15,11 @@ async function fixture(): Promise<{ directory: string; keystore: string }> {
 }
 
 describe('verifyReleaseConfig', () => {
-  it('publishes the adaptive offline-cues release as Android 1.1', async () => {
+  it('publishes the dismissible deletion notice as Android 1.1.1', async () => {
     const gradle = await readFile(join(process.cwd(), 'android/app/build.gradle'), 'utf8')
 
-    expect(gradle).toMatch(/versionCode 2/u)
-    expect(gradle).toMatch(/versionName "1\.1"/u)
+    expect(gradle).toMatch(/versionCode 3/u)
+    expect(gradle).toMatch(/versionName "1\.1\.1"/u)
   })
 
   it('rejects a missing key properties file', async () => {

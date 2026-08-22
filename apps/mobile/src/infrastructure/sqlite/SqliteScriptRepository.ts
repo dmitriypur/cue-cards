@@ -60,6 +60,7 @@ type SummaryRow = SqlRow & {
   id: string
   title: string
   card_count: number
+  offline_ready_card_count: number
   cue_status: string
   sync_status: string
   last_opened_at: string | null
@@ -79,6 +80,10 @@ export class SqliteScriptRepository implements ScriptRepository {
         scripts.id,
         scripts.title,
         COUNT(cards.id) AS card_count,
+        COALESCE(SUM(CASE
+          WHEN cue_sets.status = 'ready' AND cue_sets.source_hash = cards.content_hash THEN 1
+          ELSE 0
+        END), 0) AS offline_ready_card_count,
         CASE
           WHEN SUM(CASE WHEN cue_sets.status = 'failed' THEN 1 ELSE 0 END) > 0 THEN 'failed'
           WHEN SUM(CASE WHEN cue_sets.status = 'stale' THEN 1 ELSE 0 END) > 0 THEN 'stale'
@@ -102,6 +107,7 @@ export class SqliteScriptRepository implements ScriptRepository {
       id: row.id,
       title: row.title,
       cardCount: row.card_count,
+      offlineReadyCardCount: row.offline_ready_card_count,
       cueStatus: row.cue_status as CueStatus,
       syncStatus: row.sync_status as SyncStatus,
       lastOpenedAt: row.last_opened_at,

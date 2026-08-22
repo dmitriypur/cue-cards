@@ -121,6 +121,14 @@ describe('SaveScriptAggregate', () => {
       state: 'pending',
     })
     expect(JSON.parse(String(outbox[0]?.payload))).toEqual(aggregate)
+
+    await expect(new SqliteScriptRepository(driver).list()).resolves.toEqual([
+      expect.objectContaining({
+        id: aggregate.id,
+        cardCount: 2,
+        offlineReadyCardCount: 1,
+      }),
+    ])
   })
 
   it('notifies synchronization only after the local transaction commits', async () => {

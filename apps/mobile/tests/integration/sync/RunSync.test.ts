@@ -10,6 +10,7 @@ import type {
 import { ApplyRemoteChanges } from '@/application/sync/ApplyRemoteChanges'
 import { RecordSyncConflict } from '@/application/sync/RecordSyncConflict'
 import { RunSync } from '@/application/sync/RunSync'
+import { StartRecording } from '@/application/recording/StartRecording'
 import { SaveScriptAggregate } from '@/application/scripts/SaveScriptAggregate'
 import type { ScriptAggregate } from '@/domain/scripts/types'
 import { LocalUnitOfWork } from '@/infrastructure/sqlite/LocalUnitOfWork'
@@ -17,6 +18,7 @@ import { migrateInitialSchema } from '@/infrastructure/sqlite/migrations/001_ini
 import { migrateSyncConflicts } from '@/infrastructure/sqlite/migrations/002_sync_conflicts'
 import { SqliteConflictRepository } from '@/infrastructure/sqlite/SqliteConflictRepository'
 import { SqliteOutboxRepository } from '@/infrastructure/sqlite/SqliteOutboxRepository'
+import { SqliteRecordingSessionRepository } from '@/infrastructure/sqlite/SqliteRecordingSessionRepository'
 import { SqliteScriptRepository } from '@/infrastructure/sqlite/SqliteScriptRepository'
 import { SqliteSyncStateRepository } from '@/infrastructure/sqlite/SqliteSyncStateRepository'
 import { InMemorySqlDriver } from '../../helpers/InMemorySqlDriver'
@@ -185,6 +187,105 @@ describe('RunSync', () => {
     expect(gateway.submitted).toEqual([])
     expect(gateway.changesAfter).toEqual([])
     await expect(outbox.next()).resolves.toMatchObject({ operationId: operationIds[0] })
+  })
+
+  it('downloads adaptive cues and keeps them available for recording after an offline restart', async () => {
+    const local = aggregate(scriptId, 'Лесная запись', '2026-08-07T07:00:00.000Z')
+    await scripts.save({ ...local, serverVersion: 1, syncStatus: 'synced' })
+    const remoteCues = [
+      'Объяснить, почему внимание быстро рассеивается.',
+      'Назвать главный внешний отвлекающий фактор.',
+      'Показать внутреннюю причину потери фокуса.',
+      'Привести короткий пример из повседневной работы.',
+      'Дать первый практический шаг для возвращения внимания.',
+      'Связать этот шаг со следующим блоком сценария.',
+    ]
+    const remote: ScriptAggregate = {
+      ...local,
+      serverVersion: 2,
+      syncStatus: 'synced',
+      cards: local.cards.map((card) => ({
+        ...card,
+        cueSet: {
+          ...card.cueSet,
+          cues: remoteCues,
+          sourceHash: card.contentHash,
+          status: 'ready',
+          generationId: '019b9ccb-3f71-7000-8000-000000000298',
+          version: 1,
+        },
+      })),
+    }
+    const gateway = new FakeGateway()
+    gateway.page = {
+      changes: [{
+        cursor: 2,
+        aggregateId: scriptId,
+        version: 2,
+        type: 'script.replace',
+        snapshot: remote,
+      }],
+      nextCursor: 2,
+      hasMore: false,
+    }
+
+    await expect(action(new FixedConnectivity(true), gateway).execute('startup')).resolves.toEqual({
+      state: 'up-to-date',
+      uploaded: 0,
+      downloaded: 1,
+    })
+
+    const restartedScripts = new SqliteScriptRepository(driver)
+    const restartedOutbox = new SqliteOutboxRepository(driver)
+    const restartedState = new SqliteSyncStateRepository(driver)
+    const restartedConflicts = new SqliteConflictRepository(driver)
+    const forbiddenGateway = new FakeGateway()
+    const offlineSync = new RunSync(
+      new FixedConnectivity(false),
+      forbiddenGateway,
+      restartedScripts,
+      restartedOutbox,
+      restartedState,
+      new ApplyRemoteChanges(
+        restartedScripts,
+        restartedOutbox,
+        restartedState,
+        new LocalUnitOfWork(driver),
+      ),
+      new RecordSyncConflict(
+        restartedConflicts,
+        restartedScripts,
+        new LocalUnitOfWork(driver),
+        () => '019b9ccb-3f71-7000-8000-000000000299',
+        { now: () => '2026-08-07T07:09:00.000Z' },
+      ),
+    )
+
+    await expect(offlineSync.execute('startup')).resolves.toMatchObject({ state: 'offline' })
+    expect(forbiddenGateway.submitted).toEqual([])
+    expect(forbiddenGateway.changesAfter).toEqual([])
+    await expect(restartedScripts.get(scriptId)).resolves.toMatchObject({
+      sourceText: '# Лесная запись',
+      cards: [{ fullText: 'Синтетический полный текст.', cueSet: { cues: remoteCues } }],
+    })
+    await expect(restartedScripts.list()).resolves.toEqual([
+      expect.objectContaining({ cardCount: 1, offlineReadyCardCount: 1 }),
+    ])
+
+    const sessions = new SqliteRecordingSessionRepository(driver)
+    const wakeLock = { acquire: () => Promise.resolve(), release: () => Promise.resolve() }
+    await new StartRecording(
+      restartedScripts,
+      sessions,
+      wakeLock,
+      { now: () => '2026-08-07T07:10:00.000Z' },
+    ).execute({
+      scriptId,
+      cardId: remote.cards[0]!.id,
+      mode: 'cues',
+      fontScale: 1,
+    })
+    await expect(sessions.get(scriptId)).resolves.toMatchObject({ mode: 'cues' })
   })
 
   it('uploads commands FIFO and acknowledges each only after server acceptance', async () => {

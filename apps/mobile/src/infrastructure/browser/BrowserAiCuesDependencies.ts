@@ -71,7 +71,14 @@ export class BrowserAiCuesDependencies implements AiCuesDependencies {
           ...card,
           cueSet: {
             ...card.cueSet,
-            cues: ['Ключевая мысль', 'Практический шаг', 'Короткий вывод'],
+            cues: [
+              'Ключевая мысль',
+              'Причина проблемы',
+              'Показательный пример',
+              'Практический шаг',
+              'Короткий вывод',
+              'Связный переход',
+            ],
             sourceHash: card.contentHash,
             status: 'ready',
             generationId,

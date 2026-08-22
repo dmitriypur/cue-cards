@@ -28,6 +28,11 @@ export class BrowserScriptRepository implements ScriptRepository {
         id: script.id,
         title: script.title,
         cardCount: script.cards.filter(({ deletedAt }) => deletedAt === null).length,
+        offlineReadyCardCount: script.cards.filter(({ deletedAt, contentHash, cueSet }) => (
+          deletedAt === null
+          && cueSet.status === 'ready'
+          && cueSet.sourceHash === contentHash
+        )).length,
         cueStatus: aggregateCueStatus(script),
         syncStatus: script.syncStatus,
         lastOpenedAt: script.lastOpenedAt,

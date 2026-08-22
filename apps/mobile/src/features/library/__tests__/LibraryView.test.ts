@@ -10,12 +10,14 @@ import {
   type LibraryNavigation,
 } from '@/features/library/library.dependencies'
 import LibraryView from '@/features/library/LibraryView.vue'
+import { useSyncStore } from '@/features/sync/sync.store'
 
 const summaries: readonly ScriptSummary[] = [
   {
     id: 'generating',
     title: 'Генерация тезисов',
     cardCount: 5,
+    offlineReadyCardCount: 2,
     cueStatus: 'generating',
     syncStatus: 'synced',
     lastOpenedAt: '2026-08-06T08:00:00.000Z',
@@ -25,6 +27,7 @@ const summaries: readonly ScriptSummary[] = [
     id: 'stale',
     title: 'Тезисы устарели',
     cardCount: 3,
+    offlineReadyCardCount: 1,
     cueStatus: 'stale',
     syncStatus: 'pending',
     lastOpenedAt: null,
@@ -34,6 +37,7 @@ const summaries: readonly ScriptSummary[] = [
     id: 'failed',
     title: 'Ошибка тезисов',
     cardCount: 2,
+    offlineReadyCardCount: 0,
     cueStatus: 'failed',
     syncStatus: 'local',
     lastOpenedAt: null,
@@ -68,10 +72,11 @@ function mountLibrary(options: {
     openRecording: vi.fn().mockResolvedValue(undefined),
   }
 
+  const pinia = createPinia()
   const wrapper = mount(LibraryView, {
     props: options.focus === undefined ? {} : { focus: options.focus },
     global: {
-      plugins: [createPinia()],
+      plugins: [pinia],
       provide: {
         [libraryDependenciesKey as symbol]: dependencies,
         [libraryNavigationKey as symbol]: navigation,
@@ -87,6 +92,7 @@ function mountLibrary(options: {
     get,
     executeDelete,
     undoDelete,
+    sync: useSyncStore(pinia),
     setOnline(value: boolean): void {
       online = value
       window.dispatchEvent(new Event(value ? 'online' : 'offline'))
@@ -119,6 +125,8 @@ describe('LibraryView', () => {
     expect(wrapper.text()).toContain('Создаём тезисы')
     expect(wrapper.text()).toContain('Тезисы устарели')
     expect(wrapper.text()).toContain('Ошибка тезисов')
+    expect(wrapper.text()).toContain('Тезисы на устройстве: 2 из 5')
+    expect(wrapper.text()).toContain('Тезисы на устройстве: 1 из 3')
     expect(wrapper.text()).toContain('Ожидает синхронизации')
 
     const staleTile = wrapper.get('[data-script-id="stale"]')
@@ -132,6 +140,44 @@ describe('LibraryView', () => {
     await staleTile.get('[data-action="edit"]').trigger('click')
     expect(get).toHaveBeenLastCalledWith('stale')
     expect(navigation.openEditor).toHaveBeenLastCalledWith('stale')
+  })
+
+  it('marks a fully downloaded script as ready offline', async () => {
+    const ready = [{
+      ...summaries[0]!,
+      id: 'ready',
+      title: 'Готовый сценарий',
+      cardCount: 4,
+      offlineReadyCardCount: 4,
+      cueStatus: 'ready' as const,
+    }]
+    const { wrapper } = mountLibrary({ scripts: ready })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Тезисы на устройстве: 4 из 4')
+    expect(wrapper.text()).toContain('Готово офлайн')
+  })
+
+  it('reloads local readiness after synchronization completes', async () => {
+    const ready = [{
+      ...summaries[0]!,
+      offlineReadyCardCount: 5,
+      cueStatus: 'ready' as const,
+    }]
+    const { wrapper, list, sync } = mountLibrary({
+      scripts: [summaries[0]!],
+      restoredScripts: ready,
+    })
+    await flushPromises()
+    expect(wrapper.text()).toContain('Тезисы на устройстве: 2 из 5')
+
+    sync.state = 'syncing'
+    await flushPromises()
+    sync.state = 'up-to-date'
+    await flushPromises()
+
+    expect(list).toHaveBeenCalledTimes(2)
+    expect(wrapper.text()).toContain('Тезисы на устройстве: 5 из 5')
   })
 
   it('requires confirmation, supports cancellation, and offers undo after deletion', async () => {

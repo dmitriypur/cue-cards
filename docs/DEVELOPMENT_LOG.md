@@ -285,3 +285,14 @@
 - No Android device was connected, so installation was not attempted.
 - Committed the owner's visual increment as `d983f85`, merged it into `main` as `1c48c81`, and pushed. The first run `31419911389` exposed the accessibility regression while all other jobs passed; the focused correction was committed as `e80ad30` and pushed.
 - GitHub Actions run `31420501146` then passed all six jobs for exact SHA `e80ad3038f9e9ba27c4f31c9d424b63ce0eede7a`, including Mobile E2E and Deploy API. Production HTTPS `/up` returned 200. Task 017 is complete.
+
+## 2026-08-22 — Task 018: adaptive cues and offline readiness (pre-deploy)
+
+- Removed the product-level 3–5 cue limit across server snapshots, AI results, OpenAPI, mobile validation, and editor controls. Ready sets now require one or more unique, trimmed, non-empty strings of at most 200 characters; `full_text` and source-hash protections remain unchanged.
+- Provider requests now include the script title and ordered card outline while instructing the model to choose one concise speaking cue per independent thought using facts only from the current card. Prompt version advanced to 2, and byte-aware batching includes the shared context.
+- Added explicit library readiness (`Тезисы на устройстве: N из M`, with `Готово офлайн` when complete), derived from source-hash-matching SQLite cue sets and refreshed after synchronization.
+- Added regression coverage proving six synchronized cues survive SQLite repository reconstruction, require no gateway access offline, preserve full text, and remain usable when recording starts. The Playwright author journey also verifies six editable cues and their offline recording display.
+- TDD evidence included expected failures for the old 3–5 validators, editor control limits, missing outline context, absent readiness count, and the three-cue browser adapter. Focused GREEN passed 38 API tests/341 assertions and 59 mobile tests.
+- Full pre-deploy verification passed: API 98 passed/1 skipped with 692 assertions; Pint; deterministic OpenAPI generation; mobile 218/218; strict typecheck; production build (189 modules); Playwright 3/3; Capacitor sync; and Gradle debug tests/assembly with 297 tasks.
+- Built the production-connected signed Android 1.1 release (`versionCode 2`) with 360 successful Gradle tasks. `apksigner` verified APK Signature Scheme v2 and the existing RSA-4096 signer; the embedded origin is `https://cue-cards.web-func.ru`; SHA-256 is `ef905b50dfe773e33cb0176c9ecd95db6599263cdc2f5502350e16aee06dea54`.
+- No Android device was connected according to ADB, so installation and the physical-device offline smoke remain unperformed. Production merge/deploy and live synthetic AI smoke are the remaining completion gates.

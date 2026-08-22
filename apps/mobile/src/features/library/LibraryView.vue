@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, onMounted, onUnmounted, ref } from 'vue'
+import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import {
   libraryDependenciesKey,
@@ -7,6 +7,7 @@ import {
 } from '@/features/library/library.dependencies'
 import { useLibraryStore } from '@/features/library/library.store'
 import ScriptListItem from '@/features/library/components/ScriptListItem.vue'
+import { useSyncStore } from '@/features/sync/sync.store'
 import ConfirmDialog from '@/shared/ui/ConfirmDialog.vue'
 
 const props = defineProps<{ readonly focus?: string }>()
@@ -14,6 +15,7 @@ const props = defineProps<{ readonly focus?: string }>()
 const dependencies = inject(libraryDependenciesKey, null)
 const navigation = inject(libraryNavigationKey, null)
 const store = useLibraryStore()
+const sync = useSyncStore()
 const actionError = ref<string | null>(null)
 const scriptToDelete = ref<string | null>(null)
 const online = ref(dependencies?.isOnline() ?? false)
@@ -21,6 +23,12 @@ const undoing = ref(false)
 const focusedIds = computed(() => new Set(
   (props.focus ?? '').split(',').map((id) => id.trim()).filter((id) => id.length > 0),
 ))
+
+watch(() => sync.state, async (state, previous) => {
+  if (state === 'up-to-date' && previous === 'syncing' && dependencies !== null) {
+    await store.load(dependencies.listScripts)
+  }
+})
 
 function refreshConnectivity(): void {
   online.value = dependencies?.isOnline() ?? false

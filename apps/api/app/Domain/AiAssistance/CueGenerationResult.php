@@ -43,8 +43,8 @@ final readonly class CueGenerationResult
             }
 
             $cues = $card['cues'] ?? null;
-            if (! is_array($cues) || ! array_is_list($cues) || count($cues) < 3 || count($cues) > 5) {
-                throw new InvalidArgumentException('Every card must contain 3–5 cues.');
+            if (! is_array($cues) || ! array_is_list($cues) || $cues === []) {
+                throw new InvalidArgumentException('Every card must contain at least one cue.');
             }
             $trimmed = [];
             foreach ($cues as $cue) {

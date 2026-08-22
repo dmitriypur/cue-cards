@@ -43,6 +43,7 @@ test('author imports, edits offline, reconnects, syncs, and restores recording',
   await expect(page.getByRole('heading', { name: 'Сценарий о внимании' })).toBeVisible()
   await page.getByRole('button', { name: 'Создать тезисы для сценария' }).click()
   await expect(page.getByText('Тезисы готовы').first()).toBeVisible()
+  await expect(page.locator('[data-card-id]').first().locator('[data-cue-input]')).toHaveCount(6)
   await page.getByRole('button', { name: 'Переместить карточку вниз' }).first().click()
   await expect(page.getByLabel('Заголовок').first()).toHaveValue('Основная мысль')
 
@@ -75,6 +76,7 @@ test('author imports, edits offline, reconnects, syncs, and restores recording',
   await expect(page.getByRole('heading', { name: 'Настройка записи' })).toBeVisible()
   await page.getByRole('button', { name: 'Начать запись' }).click()
   await expect(page.locator('[data-recording-content]')).toContainText('Ключевая мысль')
+  await expect(page.locator('[data-recording-content]')).toContainText('Связный переход')
   await page.getByRole('button', { name: 'Показать полный текст' }).first().click()
   await expect(page.locator('[data-recording-content]')).toContainText('Сначала покажите результат')
 

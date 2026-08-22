@@ -52,21 +52,36 @@ class GenerateScriptCues implements ShouldQueue
 
         $cards = Card::query()->whereIn('id', array_keys($generation->source_hashes))
             ->orderBy('position')->get();
+        $script = $generation->script()->firstOrFail();
+        $outline = Card::query()
+            ->where('script_id', $generation->script_id)
+            ->whereNull('deleted_at')
+            ->orderBy('position')
+            ->get(['id', 'position', 'title'])
+            ->map(static fn (Card $card): array => [
+                'card_id' => $card->id,
+                'position' => $card->position,
+                'title' => $card->title,
+            ])->all();
         $requestCards = $cards->map(fn (Card $card): array => [
             'card_id' => $card->id,
             'title' => $card->title,
             'full_text' => $card->full_text,
             'source_hash' => $generation->source_hashes[$card->id],
         ])->all();
-        $fullRequest = CueGenerationRequest::fromCards($requestCards);
+        $fullRequest = CueGenerationRequest::fromCards($requestCards, $script->title, $outline);
 
         $responses = [];
         $inputTokens = 0;
         $outputTokens = 0;
         $providerRequestId = null;
-        foreach ($this->batches($requestCards) as $batch) {
+        foreach ($this->batches($requestCards, $script->title, $outline) as $batch) {
             try {
-                $result = $generator->generate(CueGenerationRequest::fromCards($batch));
+                $result = $generator->generate(CueGenerationRequest::fromCards(
+                    $batch,
+                    $script->title,
+                    $outline,
+                ));
             } catch (Throwable) {
                 $usage->failed($generation);
 
@@ -111,14 +126,18 @@ class GenerateScriptCues implements ShouldQueue
      * @param  list<array<string, mixed>>  $cards
      * @return list<list<array<string, mixed>>>
      */
-    private function batches(array $cards): array
+    private function batches(array $cards, string $scriptTitle, array $outline): array
     {
         $maximum = (int) config('cue-cards.ai.max_prompt_bytes');
         $batches = [];
         $current = [];
         foreach ($cards as $card) {
             $candidate = [...$current, $card];
-            $bytes = strlen(json_encode(['cards' => $candidate], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+            $bytes = strlen(json_encode([
+                'script_title' => $scriptTitle,
+                'outline' => $outline,
+                'cards' => $candidate,
+            ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
             if ($current === [] && $bytes > $maximum) {
                 throw new InvalidArgumentException('A card exceeds the configured AI prompt byte limit.');
             }

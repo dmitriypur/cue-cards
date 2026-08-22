@@ -29,8 +29,13 @@ export class UpdateCues {
 
   public async execute(input: UpdateCuesInput): Promise<ScriptAggregate> {
     const cues = input.cues.map((cue) => cue.trim())
-    if (cues.length < 3 || cues.length > 5 || cues.some((cue) => cue === '')) {
-      throw new Error('Cues must contain 3 to 5 non-empty strings')
+    const uniqueCues = new Set(cues)
+    if (
+      cues.length === 0
+      || cues.some((cue) => cue === '' || [...cue].length > 200)
+      || uniqueCues.size !== cues.length
+    ) {
+      throw new Error('Cues must contain unique non-empty strings up to 200 characters')
     }
 
     const aggregate = await this.scripts.get(input.scriptId)

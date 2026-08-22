@@ -246,6 +246,30 @@ describe('ScriptEditorView', () => {
     })
   })
 
+  it('allows one cue and adding a sixth cue before saving', async () => {
+    const { wrapper, updateCues } = mountEditor()
+    await flushPromises()
+    const card = wrapper.get('[data-card-id="card-a"]')
+
+    await card.findAll('[data-action="remove-cue"]')[0]!.trigger('click')
+    await card.findAll('[data-action="remove-cue"]')[0]!.trigger('click')
+    expect(card.findAll('[data-cue-input]')).toHaveLength(1)
+
+    for (let index = 2; index <= 6; index += 1) {
+      await card.get('[data-action="add-cue"]').trigger('click')
+      await card.findAll('[data-cue-input]')[index - 1]!.setValue(`Опора ${index}`)
+    }
+    expect(card.findAll('[data-cue-input]')).toHaveLength(6)
+
+    await card.get('[data-action="save-cues"]').trigger('click')
+    await flushPromises()
+    expect(updateCues).toHaveBeenCalledWith({
+      scriptId: aggregate.id,
+      cardId: 'card-a',
+      cues: ['Третий тезис', 'Опора 2', 'Опора 3', 'Опора 4', 'Опора 5', 'Опора 6'],
+    })
+  })
+
   it('flushes pending text on background and confirms merge after opening split controls', async () => {
     const { wrapper, updateCard, splitCard, mergeCards, background } = mountEditor()
     await flushPromises()

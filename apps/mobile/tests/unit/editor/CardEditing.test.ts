@@ -215,21 +215,21 @@ describe('card editing actions', () => {
       .rejects.toThrow('Last card cannot be merged')
   })
 
-  it('trims and saves 3–5 manual cues without changing full text', async () => {
+  it('trims and saves one manual cue without changing full text', async () => {
     const context = harness()
     const action = new UpdateCues(context.repository, context.saver, context.clock)
 
     const result = await action.execute({
       scriptId: aggregate.id,
       cardId: 'card-a',
-      cues: ['  Раз  ', 'Два', 'Три'],
+      cues: ['  Единственная опора  '],
     })
 
     expect(result.cards[0]).toMatchObject({
       fullText: 'Первый текст.',
       contentHash: 'hash-a',
       cueSet: {
-        cues: ['Раз', 'Два', 'Три'],
+        cues: ['Единственная опора'],
         sourceHash: 'hash-a',
         status: 'ready',
         manuallyEdited: true,
@@ -240,16 +240,28 @@ describe('card editing actions', () => {
     expect(context.saved()).toEqual({ aggregate: result })
   })
 
+  it('saves more than five unique manual cues', async () => {
+    const context = harness()
+    const action = new UpdateCues(context.repository, context.saver, context.clock)
+    const cues = ['Раз', 'Два', 'Три', 'Четыре', 'Пять', 'Шесть']
+
+    const result = await action.execute({ scriptId: aggregate.id, cardId: 'card-a', cues })
+
+    expect(result.cards[0]?.cueSet.cues).toEqual(cues)
+    expect(context.saved()).toEqual({ aggregate: result })
+  })
+
   it.each([
-    ['too few', ['Раз', 'Два']],
-    ['too many', ['Раз', 'Два', 'Три', 'Четыре', 'Пять', 'Шесть']],
+    ['empty list', []],
     ['empty', ['Раз', 'Два', '   ']],
+    ['duplicate', ['Раз', ' Раз ']],
+    ['overlong', ['я'.repeat(201)]],
   ])('rejects %s manual cues without saving', async (_case, cues) => {
     const context = harness()
     const action = new UpdateCues(context.repository, context.saver, context.clock)
 
     await expect(action.execute({ scriptId: aggregate.id, cardId: 'card-a', cues }))
-      .rejects.toThrow('Cues must contain 3 to 5 non-empty strings')
+      .rejects.toThrow('Cues must contain unique non-empty strings up to 200 characters')
     expect(context.saved()).toBeNull()
   })
 })

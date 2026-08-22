@@ -58,6 +58,7 @@ export interface ScriptSummary {
   readonly id: UUID
   readonly title: string
   readonly cardCount: number
+  readonly offlineReadyCardCount: number
   readonly cueStatus: CueStatus
   readonly syncStatus: SyncStatus
   readonly lastOpenedAt: IsoTimestamp | null

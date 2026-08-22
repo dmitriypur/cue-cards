@@ -37,6 +37,12 @@ const cueLabel = computed(() => ({
         <p class="mt-1 text-sm text-muted-foreground">
           {{ script.cardCount }} карточек · {{ cueLabel }}
         </p>
+        <p class="mt-1 text-sm text-muted-foreground">
+          Тезисы на устройстве: {{ script.offlineReadyCardCount }} из {{ script.cardCount }}
+          <span v-if="script.cardCount > 0 && script.offlineReadyCardCount === script.cardCount">
+            · Готово офлайн
+          </span>
+        </p>
       </div>
       <SyncBadge :status="script.syncStatus" />
     </div>

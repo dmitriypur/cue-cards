@@ -16,11 +16,11 @@ watch(() => props.cues, (cues) => {
 })
 
 function addCue(): void {
-  if (values.value.length < 5) values.value.push('')
+  values.value.push('')
 }
 
 function removeCue(index: number): void {
-  if (values.value.length > 3) values.value.splice(index, 1)
+  if (values.value.length > 1) values.value.splice(index, 1)
 }
 </script>
 
@@ -40,7 +40,7 @@ function removeCue(index: number): void {
           data-action="remove-cue"
           :aria-label="`Удалить тезис ${index + 1}`"
           class="min-h-12 min-w-12 rounded-md border"
-          :disabled="values.length <= 3"
+          :disabled="values.length <= 1"
           @click="removeCue(index)"
         >
           −
@@ -52,7 +52,6 @@ function removeCue(index: number): void {
         type="button"
         data-action="add-cue"
         class="min-h-12 rounded-md border px-3"
-        :disabled="values.length >= 5"
         @click="addCue"
       >
         Добавить тезис

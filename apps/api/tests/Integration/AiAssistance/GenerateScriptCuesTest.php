@@ -42,19 +42,24 @@ class GenerateScriptCuesTest extends TestCase
         $this->assertSame(1, $generation->provider_calls);
         $this->assertSame(0, $generation->failed_provider_calls);
         $this->assertSame(1, $generation->attempts);
+        $this->assertSame('2', $generation->prompt_version);
         $this->assertSame(2, $script->refresh()->version);
         $this->assertDatabaseCount('sync_changes', 1);
         foreach ($cards as $index => $card) {
             $this->assertSame($originalTexts[$index], $card->refresh()->full_text);
             $this->assertSame('ready', $card->cueSet->status);
-            $this->assertCount(3, $card->cueSet->cues);
+            $this->assertCount(6, $card->cueSet->cues);
             $this->assertSame($card->content_hash, $card->cueSet->source_hash);
         }
+        $this->assertSame(['Синтетический сценарий'], $generator->requestedScriptTitles);
+        $this->assertSame([
+            ['Блок 1', 'Блок 2'],
+        ], $generator->requestedOutlineTitles);
     }
 
     public function test_batches_cards_deterministically_by_configured_prompt_bytes(): void
     {
-        config()->set('cue-cards.ai.max_prompt_bytes', 230);
+        config()->set('cue-cards.ai.max_prompt_bytes', 500);
         [$generation, $script, $cards] = $this->queuedGeneration();
         $generator = new RecordingCueGenerator;
 
@@ -203,7 +208,7 @@ class GenerateScriptCuesTest extends TestCase
         $cueSet = $card->refresh()->cueSet;
         $this->assertFalse($cueSet->manually_edited);
         $this->assertSame('ready', $cueSet->status);
-        $this->assertSame(['Короткий первый', 'Короткий второй', 'Короткий третий'], $cueSet->cues);
+        $this->assertCount(6, $cueSet->cues);
     }
 
     public function test_a_single_oversized_prompt_is_rejected_before_calling_the_provider(): void
@@ -278,6 +283,12 @@ final class RecordingCueGenerator implements CueGenerator
     /** @var list<list<string>> */
     public array $requestedCardIds = [];
 
+    /** @var list<string> */
+    public array $requestedScriptTitles = [];
+
+    /** @var list<list<string>> */
+    public array $requestedOutlineTitles = [];
+
     private bool $mutated = false;
 
     public function __construct(
@@ -288,6 +299,8 @@ final class RecordingCueGenerator implements CueGenerator
     public function generate(CueGenerationRequest $request): CueGenerationResult
     {
         $this->requestedCardIds[] = $request->cardIds();
+        $this->requestedScriptTitles[] = $request->scriptTitle;
+        $this->requestedOutlineTitles[] = array_column($request->outline, 'title');
         if (! $this->mutated && is_callable($this->duringFirstCall)) {
             ($this->duringFirstCall)();
             $this->mutated = true;
@@ -299,7 +312,7 @@ final class RecordingCueGenerator implements CueGenerator
         return CueGenerationResult::fromProviderResponse($request, ['cards' => array_map(
             static fn (string $cardId): array => [
                 'card_id' => $cardId,
-                'cues' => ['Короткий первый', 'Короткий второй', 'Короткий третий'],
+                'cues' => ['Опора один', 'Опора два', 'Опора три', 'Опора четыре', 'Опора пять', 'Опора шесть'],
             ],
             $request->cardIds(),
         )], 200, 'provider-request', 10, 4);

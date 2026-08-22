@@ -46,6 +46,6 @@
 
 - [x] Run full API, Pint, OpenAPI drift, mobile unit, typecheck, build, E2E, Capacitor, and Android checks.
 - [x] Update Android to version code 2/name 1.1 and build the production-connected signed APK.
-- [ ] Merge to `main`, push, wait for exact-SHA CI/deploy, and run production health plus synthetic DeepSeek smoke.
-- [ ] Install/update and run the offline device smoke when ADB is available; otherwise record APK path, signature, and checksum.
-- [ ] Complete Task 018 and record exact evidence in `docs/DEVELOPMENT_LOG.md`.
+- [x] Merge to `main`, push, wait for exact-SHA CI/deploy, and run production health plus synthetic DeepSeek smoke.
+- [x] Install/update and run the offline device smoke when ADB is available; otherwise record APK path, signature, and checksum.
+- [x] Complete Task 018 and record exact evidence in `docs/DEVELOPMENT_LOG.md`.

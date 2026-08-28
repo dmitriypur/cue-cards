@@ -323,3 +323,8 @@
 - Production checkout matched the merge SHA. HTTPS `/up` returned 200; Nginx, PHP-FPM, PostgreSQL, Supervisor, and `cue-cards-ai-worker` were active.
 - Final production smoke created a temporary superadmin without exposing credentials, logged in over HTTPS with 200, and synchronized synthetic Cyrillic Markdown containing significant leading/trailing whitespace with 200. Direct database verification confirmed byte-exact `source_text` and `full_text` plus the matching `content_hash`; the temporary account and all cascaded data were deleted automatically.
 - Task 020 is complete. The already installed client needs no update: its persisted outbox can retry against the corrected server using “Синхронизировать” or “Повторить сейчас”.
+## 2026-08-28 — Task 021: in-flight AI generation sync race (in progress)
+
+- Production diagnostics confirmed the affected generation completed 16/16 provider results with matching current source hashes, while all 16 cue sets remained `pending` and had lost their `generation_id`. This proved that a later client snapshot cleared the server-owned link before completion, so the valid provider result was skipped rather than delayed.
+- Added real sync-path regressions for clearing the current in-flight link and replacing it with an older generation link. RED reproduced the cleared database link; GREEN keeps the field server-controlled while the existing strict completion guard still prevents an older generation from winning.
+- AI/sync regression suites passed 26 tests/160 assertions. Full API verification passed 101 tests with 1 skipped and 697 assertions; Pint passed.

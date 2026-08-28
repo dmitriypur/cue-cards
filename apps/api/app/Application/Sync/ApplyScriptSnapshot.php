@@ -156,12 +156,14 @@ class ApplyScriptSnapshot
             }
             if ($card['cue_set'] !== null) {
                 $cue = $card['cue_set'];
+                $existingCueSet = DB::table('cue_sets')->where('id', $cue['id'])->first(['generation_id']);
                 $cueValues = [
                     'card_id' => $card['id'], 'cues' => json_encode($cue['cues'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
-                    'source_hash' => $cue['source_hash'], 'status' => $cue['status'], 'generation_id' => $cue['generation_id'],
+                    'source_hash' => $cue['source_hash'], 'status' => $cue['status'],
+                    'generation_id' => $existingCueSet?->generation_id,
                     'manually_edited' => $cue['manually_edited'], 'version' => $cue['version'], 'updated_at' => $snapshot['updated_at'],
                 ];
-                if (! DB::table('cue_sets')->where('id', $cue['id'])->exists()) {
+                if ($existingCueSet === null) {
                     DB::table('cue_sets')->insert(['id' => $cue['id'], 'created_at' => $now, ...$cueValues]);
                 } else {
                     DB::table('cue_sets')->where('id', $cue['id'])->update($cueValues);

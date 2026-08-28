@@ -311,3 +311,11 @@
 - Merged Task 019 into `main` as `425957785800b574aa09434e18df3255e01d5137`. On the merged tree, mobile verification passed 218/218 unit tests, strict typecheck, and production build with 189 modules.
 - Signed `npm run android:release` completed 360 Gradle tasks for production-connected Android 1.1.1/code 3. APK Signature Scheme v2 verified the existing RSA-4096 signer; SHA-256 is `f3f98505018f9d705c097112fe279fe6bea225ac0ca7d225216d6fbe45286885`.
 - No ADB device was connected, so the APK was not installed automatically. The stable ignored artifact remains at `apps/mobile/android/app/build/outputs/apk/release/app-release.apk`.
+
+## 2026-08-28 — Task 020: preserve synchronized script text (pre-deploy)
+
+- Production evidence showed repeated authenticated `POST /api/v1/sync/commands` responses with HTTP 422 while health, PHP-FPM, PostgreSQL, and the AI worker remained active. Safe Laravel logs identified `Card content hash does not match its full text` before any AI generation was created.
+- Root-cause tracing confirmed Laravel `TrimStrings` changed leading/trailing whitespace in `source_text` and `full_text` after the mobile client calculated the content hash. This affected Markdown whitespace such as hard line breaks and left the unchanged local snapshot retrying in the outbox.
+- Added an HTTP regression using synthetic Cyrillic text with significant outer whitespace. RED reproduced the production 422; after excluding only synchronized `source_text` and `full_text` fields from trimming, GREEN passed 1/1 with 3 assertions and verified byte-for-byte persistence.
+- Focused sync/privacy verification passed 17/17 tests with 139 assertions. Full API verification passed 99 tests with 695 assertions and one environment-specific skip. Laravel Pint passed.
+- No client storage or source text was modified. Existing pending outbox snapshots remain recoverable and can be accepted after the server deployment.

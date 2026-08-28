@@ -29,6 +29,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->api(prepend: [CorrelationId::class]);
+        $middleware->trimStrings(except: [
+            'commands.*.payload.source_text',
+            'commands.*.payload.cards.*.full_text',
+        ]);
         $middleware->redirectGuestsTo(
             static fn (Request $request): ?string => $request->is('api/*') ? null : '/',
         );

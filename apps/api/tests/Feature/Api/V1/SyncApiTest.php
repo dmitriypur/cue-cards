@@ -28,6 +28,31 @@ class SyncApiTest extends TestCase
             ->assertJsonPath('data.next_cursor', 1)->assertJsonPath('data.has_more', false);
     }
 
+    public function test_preserves_hashed_script_text_byte_for_byte_during_sync(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+        $command = $this->command();
+        $sourceText = "# Синтетический сценарий\n\n## Блок\n\n  Исходный текст.  \n";
+        $fullText = '  Синтетический блок с Markdown-пробелами.  ';
+        $command['payload']['source_text'] = $sourceText;
+        $command['payload']['cards'][0]['full_text'] = $fullText;
+        $command['payload']['cards'][0]['content_hash'] = hash('sha256', $fullText);
+        $command['payload']['cards'][0]['cue_set']['source_hash'] = hash('sha256', $fullText);
+
+        $this->postJson('/api/v1/sync/commands', ['commands' => [$command]])
+            ->assertOk();
+
+        $this->assertDatabaseHas('scripts', [
+            'id' => $command['aggregate_id'],
+            'source_text' => $sourceText,
+        ]);
+        $this->assertDatabaseHas('cards', [
+            'id' => $command['payload']['cards'][0]['id'],
+            'full_text' => $fullText,
+            'content_hash' => hash('sha256', $fullText),
+        ]);
+    }
+
     public function test_returns_stable_conflict_and_rejects_oversized_batches(): void
     {
         $user = User::factory()->create();

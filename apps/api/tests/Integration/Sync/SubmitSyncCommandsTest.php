@@ -5,6 +5,8 @@ namespace Tests\Integration\Sync;
 use App\Application\Sync\InvalidSyncCommand;
 use App\Application\Sync\SubmitSyncCommands;
 use App\Application\Sync\SyncConflict;
+use App\Domain\AiAssistance\GenerationStatus;
+use App\Models\AiGeneration;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -55,6 +57,77 @@ class SubmitSyncCommandsTest extends TestCase
         $this->assertSame([1, 2], array_map(static fn ($item) => $item->version, $result->results));
         $this->assertDatabaseHas('scripts', ['id' => $first['aggregate_id'], 'title' => 'Вторая версия', 'version' => 2]);
         $this->assertSame([1, 2], DB::table('sync_changes')->orderBy('cursor')->pluck('version')->all());
+    }
+
+    public function test_client_snapshot_cannot_clear_a_server_owned_generation_link(): void
+    {
+        $user = User::factory()->create();
+        $first = $this->command();
+        app(SubmitSyncCommands::class)->handle($user, [$first]);
+        $generation = AiGeneration::query()->create([
+            'user_id' => $user->id,
+            'script_id' => $first['aggregate_id'],
+            'provider' => 'deepseek',
+            'model' => 'synthetic-model',
+            'prompt_version' => '2',
+            'source_hashes' => [$first['payload']['cards'][0]['id'] => $first['payload']['cards'][0]['content_hash']],
+            'source_cue_versions' => [$first['payload']['cards'][0]['id'] => 0],
+            'status' => GenerationStatus::Running,
+            'attempts' => 1,
+            'completed_cards' => 0,
+            'total_cards' => 1,
+        ]);
+        DB::table('cue_sets')->where('id', $first['payload']['cards'][0]['cue_set']['id'])->update([
+            'status' => 'generating',
+            'generation_id' => $generation->id,
+        ]);
+
+        $laterSnapshot = $this->command('0198a70d-4f72-70ad-bb3f-35b64f6ee1b2', 1);
+        $laterSnapshot['payload']['version'] = 1;
+        $laterSnapshot['payload']['cards'][0]['cue_set']['status'] = 'pending';
+        $laterSnapshot['payload']['cards'][0]['cue_set']['generation_id'] = null;
+        app(SubmitSyncCommands::class)->handle($user, [$laterSnapshot]);
+
+        $this->assertDatabaseHas('cue_sets', [
+            'id' => $first['payload']['cards'][0]['cue_set']['id'],
+            'generation_id' => $generation->id,
+        ]);
+    }
+
+    public function test_client_snapshot_cannot_replace_a_newer_server_generation_link(): void
+    {
+        $user = User::factory()->create();
+        $first = $this->command();
+        app(SubmitSyncCommands::class)->handle($user, [$first]);
+        $cardId = $first['payload']['cards'][0]['id'];
+        $generationValues = [
+            'user_id' => $user->id,
+            'script_id' => $first['aggregate_id'],
+            'provider' => 'deepseek',
+            'model' => 'synthetic-model',
+            'prompt_version' => '2',
+            'source_hashes' => [$cardId => $first['payload']['cards'][0]['content_hash']],
+            'source_cue_versions' => [$cardId => 0],
+            'status' => GenerationStatus::Running,
+            'attempts' => 1,
+            'completed_cards' => 0,
+            'total_cards' => 1,
+        ];
+        $olderGeneration = AiGeneration::query()->create($generationValues);
+        $newerGeneration = AiGeneration::query()->create($generationValues);
+        DB::table('cue_sets')->where('id', $first['payload']['cards'][0]['cue_set']['id'])->update([
+            'generation_id' => $newerGeneration->id,
+        ]);
+
+        $staleSnapshot = $this->command('0198a70d-4f72-70ad-bb3f-35b64f6ee1b2', 1);
+        $staleSnapshot['payload']['version'] = 1;
+        $staleSnapshot['payload']['cards'][0]['cue_set']['generation_id'] = $olderGeneration->id;
+        app(SubmitSyncCommands::class)->handle($user, [$staleSnapshot]);
+
+        $this->assertDatabaseHas('cue_sets', [
+            'id' => $first['payload']['cards'][0]['cue_set']['id'],
+            'generation_id' => $newerGeneration->id,
+        ]);
     }
 
     public function test_denies_replacing_an_aggregate_owned_by_another_user(): void

@@ -18,8 +18,8 @@ Prevent a client snapshot synchronized while AI generation is running from clear
 - [x] Add the failing regression test.
 - [x] Keep generation ownership server-controlled when applying client sync snapshots.
 - [x] Run focused and full verification.
-- [ ] Record evidence, commit, merge to `main`, push, and verify production.
-- [ ] Regenerate and confirm ready cues for the affected production script.
+- [x] Record evidence, commit, merge to `main`, push, and verify production.
+- [x] Regenerate and confirm ready cues for the affected production script.
 
 ## Verification evidence
 
@@ -27,3 +27,5 @@ Prevent a client snapshot synchronized while AI generation is running from clear
 - GREEN: sync cannot clear the current link or replace it with an older generation link; both focused regressions passed.
 - AI/sync regression suites passed 26 tests with 160 assertions.
 - Full API suite passed 101 tests with 1 skipped and 697 assertions; `./vendor/bin/pint --test` passed.
+- Merged to `main` as `15a5fd2` and deployed that exact commit to production.
+- The replacement production generation completed 16/16 cards; all 16 cue sets are `ready` and retain the current generation link.
